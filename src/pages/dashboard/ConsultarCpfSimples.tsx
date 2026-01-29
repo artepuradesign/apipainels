@@ -197,11 +197,11 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           hasMetadata: !!registroPayload.metadata
         });
         
-        // Chamada para o serviço unificado
-        console.log('🌐 [REGISTRO_CONSULTA] Enviando para consultasCpfService.create...');
+        // Registrar na tabela `consultations` (endpoint /consultas) — aceita `module_type` como título do módulo
+        console.log('🌐 [REGISTRO_CONSULTA] Enviando para consultationsService.create...');
         
         try {
-          const registroResult = await consultasCpfService.create(registroPayload as any);
+          const registroResult = await consultationsService.create(registroPayload as any);
           
           console.log('📊 [REGISTRO_CONSULTA] Resposta do serviço:', {
             success: registroResult.success,
@@ -333,7 +333,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           }
         };
         
-        await consultasCpfService.create(registroPayload as any);
+        await consultationsService.create(registroPayload as any);
         
         // Buscar dados da Receita Federal também
         const receitaResult = await baseReceitaService.getByCpf(cpf);
@@ -409,7 +409,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
               }
             };
             
-            await consultasCpfService.create(registroPayload as any);
+            await consultationsService.create(registroPayload as any);
             
             // Buscar dados da Receita Federal também
             const receitaResult = await baseReceitaService.getByCpf(cpf);
@@ -959,63 +959,53 @@ const ConsultarCpfPuxaTudo = () => {
     if (!user) return;
     
     try {
-      console.log('📋 [CPF_HISTORY] Carregando histórico de consultas CPF da API externa...');
-      
-      // Buscar consultas diretamente da API da tabela consultas_cpf
-      const authToken = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
-      if (!authToken) {
-        console.error('❌ [CPF_HISTORY] Token de autenticação não encontrado');
-        setQueryHistory([]);
-        return;
-      }
+      console.log('📋 [CPF_HISTORY] Carregando histórico de consultas CPF (/consultas/history)...');
 
-      const response = await consultasCpfService.getByUserId(parseInt(user.id), 1, 50);
-
+      const response = await consultationApiService.getConsultationHistory(50, 0);
       console.log('📡 [CPF_HISTORY] Resposta do serviço:', response);
 
-      if (!response.success) {
+      if (!response.success || !Array.isArray(response.data)) {
         throw new Error(response.error || 'Erro ao carregar histórico');
       }
 
-      const data = response;
-      console.log('📋 [CPF_HISTORY] Dados recebidos da API:', data);
-      
-      if (data.success && data.data && Array.isArray(data.data)) {
-        const consultasFormatted = data.data.map((consulta: any) => {
-          const valorCobrado = parseFloat(consulta.valor_cobrado || 0);
-          const descontoAplicado = parseFloat(consulta.desconto_aplicado || 0);
-          const valorOriginal = valorCobrado + descontoAplicado;
-          const descontoPercent = descontoAplicado > 0 ? Math.round((descontoAplicado / valorOriginal) * 100) : 0;
+      // Compatível com module_type antigo ("cpf") e novo (título do módulo, ex.: "CPF SIMPLES")
+      const moduleTitle = (currentModule?.title || '').toString().trim();
+      const matchesCpfModules = (mt: any) => {
+        const v = (mt ?? '').toString().toLowerCase();
+        if (!v) return false;
+        if (v === 'cpf') return true;
+        if (moduleTitle && v === moduleTitle.toLowerCase()) return true;
+        return v.includes('cpf');
+      };
 
-          console.log('🔍 [CPF_HISTORY] Processando consulta:', {
-            id: consulta.id,
-            cpf: consulta.cpf_consultado,
-            valor: valorCobrado,
-            desconto: descontoAplicado,
-            saldo: consulta.saldo_usado
-          });
+      const consultasFormatted = response.data
+        .filter((c: any) => matchesCpfModules(c?.module_type))
+        .map((consulta: any) => {
+          const valorCobrado = Number(consulta.cost || 0);
+          const descontoAplicado = Number(consulta.metadata?.discount || 0);
+          const valorOriginal = valorCobrado + descontoAplicado;
+          const descontoPercent = descontoAplicado > 0 && valorOriginal > 0
+            ? Math.round((descontoAplicado / valorOriginal) * 100)
+            : 0;
 
           return {
             date: consulta.created_at,
-            document: consulta.cpf_consultado || 'N/A',
+            document: consulta.document || 'N/A',
+            module_type: consulta.module_type,
             price: valorCobrado,
-            original_price: valorOriginal > valorCobrado ? valorOriginal : undefined,
+            original_price: descontoAplicado > 0 ? valorOriginal : undefined,
             discount_percent: descontoPercent,
-            status: 'completed',
-            success: true,
-            saldo_usado: consulta.saldo_usado || 'carteira',
-            source_table: 'consultas_cpf',
-            result_data: consulta.resultado ? (typeof consulta.resultado === 'string' ? JSON.parse(consulta.resultado) : consulta.resultado) : null
+            status: consulta.status || 'completed',
+            success: (consulta.status || 'completed') === 'completed',
+            saldo_usado: consulta.metadata?.saldo_usado || consulta.saldo_usado || 'carteira',
+            source_table: 'consultations',
+            result_data: consulta.result_data ?? null,
+            metadata: consulta.metadata
           };
         });
-        
-        setQueryHistory(consultasFormatted);
-        console.log('✅ [CPF_HISTORY] Histórico carregado com sucesso:', consultasFormatted.length, 'consultas');
-        console.log('🔍 [CPF_HISTORY] Dados formatados para exibição:', consultasFormatted);
-      } else {
-        console.warn('⚠️ [CPF_HISTORY] Nenhuma consulta encontrada');
-        setQueryHistory([]);
-      }
+
+      setQueryHistory(consultasFormatted);
+      console.log('✅ [CPF_HISTORY] Histórico carregado com sucesso:', consultasFormatted.length, 'consultas');
     } catch (error) {
       console.error('❌ [CPF_HISTORY] Erro ao carregar histórico:', error);
       setQueryHistory([]);
