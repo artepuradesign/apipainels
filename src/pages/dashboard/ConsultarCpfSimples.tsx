@@ -2527,12 +2527,12 @@ Todos os direitos reservados.`;
 
            {/* Telefones */}
            <div id="telefones-section">
-              <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} />
+              <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} compact />
            </div>
 
            {/* Emails */}
            <div id="emails-section">
-              <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} />
+              <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} compact />
            </div>
 
            {/* Endereços */}
