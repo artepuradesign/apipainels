@@ -27,7 +27,6 @@ import { useBaseVacina } from '@/hooks/useBaseVacina';
 import { consultasCpfService } from '@/services/consultasCpfService';
 import { consultasCpfHistoryService } from '@/services/consultasCpfHistoryService';
 import AuthenticatedImage from '@/components/ui/AuthenticatedImage';
-import { consultationsService } from '@/services/consultationsService';
 import { consultationApiService } from '@/services/consultationApiService';
 import { walletApiService } from '@/services/walletApiService';
 import { cookieUtils } from '@/utils/cookieUtils';
@@ -200,11 +199,11 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           hasMetadata: !!registroPayload.metadata
         });
         
-        // Registrar na tabela `consultations` (endpoint /consultas) — aceita `module_type` como título do módulo
-        console.log('🌐 [REGISTRO_CONSULTA] Enviando para consultationsService.create...');
+        // Registrar no mesmo fluxo do /dashboard/consultar-cpf-puxa-tudo para garantir que apareça em /consultas/history
+        console.log('🌐 [REGISTRO_CONSULTA] Enviando para consultasCpfService.create...');
         
         try {
-          const registroResult = await consultationsService.create(registroPayload as any);
+          const registroResult = await consultasCpfService.create(registroPayload as any);
           
           console.log('📊 [REGISTRO_CONSULTA] Resposta do serviço:', {
             success: registroResult.success,
@@ -339,7 +338,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           }
         };
         
-        await consultationsService.create(registroPayload as any);
+        await consultasCpfService.create(registroPayload as any);
         
         // Buscar dados da Receita Federal também
         const receitaResult = await baseReceitaService.getByCpf(cpf);
@@ -418,7 +417,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
               }
             };
             
-            await consultationsService.create(registroPayload as any);
+            await consultasCpfService.create(registroPayload as any);
             
             // Buscar dados da Receita Federal também
             const receitaResult = await baseReceitaService.getByCpf(cpf);
