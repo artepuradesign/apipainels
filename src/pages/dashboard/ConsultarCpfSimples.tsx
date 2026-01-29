@@ -163,10 +163,12 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
         
         console.log('💳 [REGISTRO_CONSULTA] Saldo usado determinado:', saldoUsado);
         
+        const moduleTypeTitle = (metadata?.module_title || metadata?.moduleTypeTitle || 'CPF SIMPLES').toString();
+
         const registroPayload = {
           user_id: parseInt(metadata.user_id.toString()),
-          // Salvar o TÍTULO do módulo (ex.: "CPF SIMPLES") para organizar o histórico
-          module_type: (metadata?.module_title || metadata?.moduleTypeTitle || 'cpf'),
+          // Agora SEMPRE salvamos o TÍTULO do módulo em `consultations.module_type` (não usar mais "cpf")
+          module_type: moduleTypeTitle,
           document: cpf,  // Backend PHP espera 'document', não 'documento'
           cost: finalCost, // VALOR COM DESCONTO JÁ APLICADO (preço do módulo ID 83 com desconto)
           status: 'completed',
@@ -309,9 +311,11 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           saldoUsado = 'carteira';
         }
         
+        const moduleTypeTitle = (metadata?.module_title || metadata?.moduleTypeTitle || 'CPF SIMPLES').toString();
+
         const registroPayload = {
           user_id: parseInt(metadata.user_id.toString()),
-          module_type: (metadata?.module_title || metadata?.moduleTypeTitle || 'cpf'),
+          module_type: moduleTypeTitle,
           document: cpf,
           cost: finalCost,
           status: 'completed',
@@ -385,9 +389,11 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
               saldoUsado = 'carteira';
             }
             
+            const moduleTypeTitle = (metadata?.module_title || metadata?.moduleTypeTitle || 'CPF SIMPLES').toString();
+
             const registroPayload = {
               user_id: parseInt(metadata.user_id.toString()),
-              module_type: (metadata?.module_title || metadata?.moduleTypeTitle || 'cpf'),
+              module_type: moduleTypeTitle,
               document: cpf,
               cost: finalCost,
               status: 'completed',
