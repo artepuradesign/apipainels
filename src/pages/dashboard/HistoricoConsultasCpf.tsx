@@ -7,9 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { RefreshCw, FileText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { consultasCpfHistoryService, type ConsultaCpfHistoryItem } from '@/services/consultasCpfHistoryService';
-import { consultationsService } from '@/services/consultationsService';
-import { toast } from 'sonner';
 import SimpleTitleBar from '@/components/dashboard/SimpleTitleBar';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 const formatCPF = (cpf: string) => {
   if (!cpf || cpf === 'CPF consultado') return 'N/A';
@@ -38,7 +45,9 @@ const HistoricoConsultasCpf: React.FC = () => {
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ConsultaCpfHistoryItem[]>([]);
-  const [openingId, setOpeningId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+
+  const limit = 10;
 
   const load = async () => {
     setLoading(true);
@@ -49,6 +58,7 @@ const HistoricoConsultasCpf: React.FC = () => {
       } else {
         setItems([]);
       }
+      setPage(1);
     } finally {
       setLoading(false);
     }
@@ -60,6 +70,16 @@ const HistoricoConsultasCpf: React.FC = () => {
   }, []);
 
   const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * limit;
+    return items.slice(start, start + limit);
+  }, [items, page]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const title = useMemo(() => {
     // “• N” conforme solicitado (apenas número, sem texto “registros”)
@@ -88,48 +108,11 @@ const HistoricoConsultasCpf: React.FC = () => {
     navigate('/dashboard');
   };
 
-  const openConsultation = async (item: ConsultaCpfHistoryItem) => {
-    // Recarregar do banco (API) e abrir na tela de consulta SEM cobrar
-    setOpeningId(item.id);
-    try {
-      const res = await consultationsService.getById(item.id);
-
-      if (!res.success || !res.data) {
-        toast.error(res.message || res.error || 'Não foi possível carregar a consulta');
-        return;
-      }
-
-      const consultationData = (res.data as any).result_data ?? res.data;
-      const cpf = (res.data as any).document ?? item.document;
-      const pageRoute = (res.data as any)?.metadata?.page_route;
-
-      if (!pageRoute) {
-        toast.error('Não foi possível identificar o módulo desta consulta (page_route ausente)');
-        return;
-      }
-
-      navigate(pageRoute, {
-        state: {
-          fromHistory: true,
-          consultationData,
-          cpf,
-          noCharge: true,
-        },
-      });
-    } catch (e) {
-      console.error('❌ [HIST_CPF] Erro ao abrir consulta:', e);
-      toast.error('Erro ao abrir consulta');
-    } finally {
-      setOpeningId(null);
-    }
-  };
-
   return (
     <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
       <div className="w-full max-w-6xl mx-auto">
         <SimpleTitleBar
           title={title}
-          subtitle="Toque em um registro para recarregar do banco e abrir sem cobrança."
           icon={<FileText className="h-4 w-4 md:h-5 md:w-5" />}
           onBack={handleBack}
           right={
@@ -160,17 +143,13 @@ const HistoricoConsultasCpf: React.FC = () => {
             </div>
           ) : isMobile ? (
             <div className="space-y-2">
-              {items.map((item) => {
-                const isOpening = openingId === item.id;
+              {paginatedItems.map((item) => {
                 const modulo = getModuloLabel(item);
 
                 return (
-                  <button
+                  <div
                     key={`${item.source_table}-${item.id}`}
-                    type="button"
-                    onClick={() => openConsultation(item)}
-                    disabled={openingId !== null}
-                    className="w-full text-left rounded-lg border border-border bg-card px-3 py-3 disabled:opacity-60"
+                    className="w-full rounded-lg border border-border bg-card px-3 py-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -190,61 +169,126 @@ const HistoricoConsultasCpf: React.FC = () => {
                         <div className="text-xs text-muted-foreground mt-0.5 truncate">{modulo}</div>
                       </div>
 
-                      {isOpening ? (
-                        <div className="mt-0.5 animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                      ) : (
-                        <div className="text-right">
-                          <div className="text-xs font-medium text-destructive">{formatCurrency(Number(item.cost) || 0)}</div>
-                          <div className="text-[11px] text-muted-foreground mt-0.5">abrir</div>
+                      <div className="text-right">
+                        <div className="text-xs font-medium text-destructive whitespace-nowrap">
+                          {formatCurrency(Number(item.cost) || 0)}
                         </div>
-                      )}
+                        <div className="mt-1">
+                          <Badge
+                            variant={item.status === 'completed' ? 'secondary' : 'outline'}
+                            className={
+                              item.status === 'completed'
+                                ? 'text-xs rounded-full bg-foreground text-background hover:bg-foreground/90'
+                                : 'text-xs rounded-full'
+                            }
+                          >
+                            {item.status === 'completed' ? 'Concluída' : item.status}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
-
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-52 whitespace-nowrap">CPF</TableHead>
-                  <TableHead className="whitespace-nowrap">Módulo</TableHead>
-                  <TableHead className="whitespace-nowrap">Data e Hora</TableHead>
-                  <TableHead className="w-32 text-right whitespace-nowrap">Valor</TableHead>
-                  <TableHead className="w-28 text-center whitespace-nowrap">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow
-                    key={`${item.source_table}-${item.id}`}
-                    className="cursor-pointer"
-                    onClick={() => openConsultation(item)}
-                  >
-                    <TableCell className="font-mono text-sm whitespace-nowrap">{formatCPF(item.document)}</TableCell>
-                    <TableCell className="text-sm whitespace-nowrap">{getModuloLabel(item)}</TableCell>
-                    <TableCell className="text-sm whitespace-nowrap">{formatFullDate(item.created_at)}</TableCell>
-                    <TableCell className="text-right text-sm font-medium text-destructive whitespace-nowrap">
-                      {formatCurrency(Number(item.cost) || 0)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={item.status === 'completed' ? 'secondary' : 'outline'}
-                        className={
-                          item.status === 'completed'
-                            ? 'text-xs rounded-full bg-foreground text-background hover:bg-foreground/90'
-                            : 'text-xs rounded-full'
-                        }
-                      >
-                        {item.status === 'completed' ? 'Concluída' : item.status}
-                      </Badge>
-                    </TableCell>
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-52 whitespace-nowrap">CPF</TableHead>
+                    <TableHead className="whitespace-nowrap">Módulo</TableHead>
+                    <TableHead className="whitespace-nowrap">Data e Hora</TableHead>
+                    <TableHead className="w-32 text-right whitespace-nowrap">Valor</TableHead>
+                    <TableHead className="w-28 text-center whitespace-nowrap">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((item) => (
+                    <TableRow key={`${item.source_table}-${item.id}`}>
+                      <TableCell className="font-mono text-sm whitespace-nowrap">{formatCPF(item.document)}</TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">{getModuloLabel(item)}</TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">{formatFullDate(item.created_at)}</TableCell>
+                      <TableCell className="text-right text-sm font-medium text-destructive whitespace-nowrap">
+                        {formatCurrency(Number(item.cost) || 0)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={item.status === 'completed' ? 'secondary' : 'outline'}
+                          className={
+                            item.status === 'completed'
+                              ? 'text-xs rounded-full bg-foreground text-background hover:bg-foreground/90'
+                              : 'text-xs rounded-full'
+                          }
+                        >
+                          {item.status === 'completed' ? 'Concluída' : item.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
+
+          {!loading && items.length > 0 ? (
+            <div className="mt-4 border-t border-border pt-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {(page - 1) * limit + 1} - {Math.min(page * limit, total)} de {total}
+                </div>
+
+                <Pagination className="justify-start sm:justify-center">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        className={page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (page <= 3) {
+                        pageNum = i + 1;
+                      } else if (page >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = page - 2 + i;
+                      }
+
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => setPage(pageNum)}
+                            isActive={page === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+
+                    {totalPages > 5 && page < totalPages - 2 ? (
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : null}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        className={page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          ) : null}
           </CardContent>
         </Card>
       </div>
