@@ -1971,7 +1971,7 @@ Todos os direitos reservados.`;
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
-      <div className="w-full max-w-6xl mx-auto">
+      <div className="w-full">
         <SimpleTitleBar
           title="Consulta CPF Simples"
           subtitle="Consulte dados do CPF na base de dados"
