@@ -325,7 +325,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           user_agent: navigator.userAgent,
           saldo_usado: saldoUsado,
           metadata: {
-            source: 'consultar-cpf-puxa-tudo-precheck',
+            source: 'consultar-cpf-simples-precheck',
             page_route: window.location.pathname,
             discount: metadata.discount || 0,
             original_price: metadata.original_price || finalCost,
@@ -404,7 +404,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
               user_agent: navigator.userAgent,
               saldo_usado: saldoUsado,
               metadata: {
-                source: 'railway-flow',
+            source: 'consultar-cpf-simples-railway-flow',
                 page_route: window.location.pathname,
                 discount: metadata.discount || 0,
                 original_price: metadata.original_price || finalCost,
@@ -976,18 +976,9 @@ const ConsultarCpfPuxaTudo = () => {
         throw new Error(response.error || 'Erro ao carregar histórico');
       }
 
-      // Compatível com module_type antigo ("cpf") e novo (título do módulo, ex.: "CPF SIMPLES")
-      const moduleTitle = (currentModule?.title || '').toString().trim();
-      const matchesCpfModules = (mt: any) => {
-        const v = (mt ?? '').toString().toLowerCase();
-        if (!v) return false;
-        if (v === 'cpf') return true;
-        if (moduleTitle && v === moduleTitle.toLowerCase()) return true;
-        return v.includes('cpf');
-      };
-
       const consultasFormatted = response.data
-        .filter((c: any) => matchesCpfModules(c?.module_type))
+        // Fonte de verdade: metadata.page_route (sem fallback)
+        .filter((c: any) => (c?.metadata?.page_route || '') === window.location.pathname)
         .map((consulta: any) => {
           const valorCobrado = Number(consulta.cost || 0);
           const descontoAplicado = Number(consulta.metadata?.discount || 0);
@@ -1038,11 +1029,8 @@ const ConsultarCpfPuxaTudo = () => {
       console.log('📊 [STATS] Resposta da API:', response);
       
       if (response.success && Array.isArray(response.data) && response.data.length > 0) {
-        // Filtrar consultas relacionadas a CPF (agora module_type pode ser o título do módulo)
-        const cpfConsultations = response.data.filter((c: any) => {
-          const mt = (c?.module_type ?? '').toString().toLowerCase();
-          return mt === 'cpf' || mt.includes('cpf');
-        });
+        // Fonte de verdade: metadata.page_route (sem fallback)
+        const cpfConsultations = response.data.filter((c: any) => (c?.metadata?.page_route || '') === window.location.pathname);
         
         console.log('📊 [STATS] Consultas CPF encontradas:', cpfConsultations.length);
         

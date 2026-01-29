@@ -103,14 +103,15 @@ export const consultationsService = {
       limit: limit.toString()
     });
     
-    return apiRequest<ConsultationListResponse>(`/consultas/user/${userId}?${params}`);
+    // Backend PHP expõe rotas em /consultations/*
+    return apiRequest<ConsultationListResponse>(`/consultations/user/${userId}?${params}`);
   },
 
   // Criar nova consulta
   async create(data: Omit<Consultation, 'id' | 'created_at' | 'updated_at'>) {
     console.log('➕ [CONSULTATIONS_API] Criando nova consulta:', data.module_type, data.document);
     
-    return apiRequest<{ id: number; message: string }>('/consultas', {
+    return apiRequest<{ id: number; message: string }>('/consultations', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -120,7 +121,7 @@ export const consultationsService = {
   async update(id: number, data: Partial<Consultation>) {
     console.log('✏️ [CONSULTATIONS_API] Atualizando consulta:', id);
     
-    return apiRequest<{ id: number; message: string }>(`/consultas/${id}`, {
+    return apiRequest<{ id: number; message: string }>(`/consultations/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -130,13 +131,13 @@ export const consultationsService = {
   async getById(id: number) {
     console.log('🔍 [CONSULTATIONS_API] Buscando consulta por ID:', id);
     
-    return apiRequest<Consultation>(`/consultas/${id}`);
+    return apiRequest<Consultation>(`/consultations/${id}`);
   },
 
   // Obter estatísticas das consultas
   async getStats() {
     console.log('📊 [CONSULTATIONS_API] Buscando estatísticas das consultas');
     
-    return apiRequest<any>('/consultas/user/stats');
+    return apiRequest<any>('/consultations/user/stats');
   }
 };
