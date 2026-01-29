@@ -166,8 +166,9 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
 
         const registroPayload = {
           user_id: parseInt(metadata.user_id.toString()),
-          // Agora SEMPRE salvamos o TÍTULO do módulo em `consultations.module_type` (não usar mais "cpf")
-          module_type: moduleTypeTitle,
+          // Endpoint /consultas-cpf/create aceita apenas tipos suportados (ex.: 'cpf').
+          // O título do módulo vai em metadata.module_title para exibição.
+          module_type: 'cpf',
           document: cpf,  // Backend PHP espera 'document', não 'documento'
           cost: finalCost, // VALOR COM DESCONTO JÁ APLICADO (preço do módulo ID 83 com desconto)
           status: 'completed',
@@ -178,6 +179,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
             metadata: {
               source: 'consultar-cpf-simples',
               page_route: window.location.pathname,
+              module_title: moduleTypeTitle,
               discount: metadata.discount || 0,
               original_price: metadata.original_price || finalCost, // preço original sem desconto do módulo ID 83
               discounted_price: finalCost, // preço final com desconto aplicado (mesmo que cost)
@@ -315,7 +317,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
 
         const registroPayload = {
           user_id: parseInt(metadata.user_id.toString()),
-          module_type: moduleTypeTitle,
+          module_type: 'cpf',
           document: cpf,
           cost: finalCost,
           status: 'completed',
@@ -326,6 +328,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           metadata: {
             source: 'consultar-cpf-simples-precheck',
             page_route: window.location.pathname,
+            module_title: moduleTypeTitle,
             discount: metadata.discount || 0,
             original_price: metadata.original_price || finalCost,
             discounted_price: finalCost,
@@ -394,7 +397,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
 
             const registroPayload = {
               user_id: parseInt(metadata.user_id.toString()),
-              module_type: moduleTypeTitle,
+              module_type: 'cpf',
               document: cpf,
               cost: finalCost,
               status: 'completed',
@@ -405,6 +408,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
               metadata: {
             source: 'consultar-cpf-simples-railway-flow',
                 page_route: window.location.pathname,
+                module_title: moduleTypeTitle,
                 discount: metadata.discount || 0,
                 original_price: metadata.original_price || finalCost,
                 discounted_price: finalCost,
