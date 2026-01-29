@@ -165,7 +165,8 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
         
         const registroPayload = {
           user_id: parseInt(metadata.user_id.toString()),
-          module_type: 'cpf',
+          // Salvar o TÍTULO do módulo (ex.: "CPF SIMPLES") para organizar o histórico
+          module_type: (metadata?.module_title || metadata?.moduleTypeTitle || 'cpf'),
           document: cpf,  // Backend PHP espera 'document', não 'documento'
           cost: finalCost, // VALOR COM DESCONTO JÁ APLICADO (preço do módulo ID 83 com desconto)
           status: 'completed',
@@ -310,7 +311,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
         
         const registroPayload = {
           user_id: parseInt(metadata.user_id.toString()),
-          module_type: 'cpf',
+          module_type: (metadata?.module_title || metadata?.moduleTypeTitle || 'cpf'),
           document: cpf,
           cost: finalCost,
           status: 'completed',
@@ -386,7 +387,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
             
             const registroPayload = {
               user_id: parseInt(metadata.user_id.toString()),
-              module_type: 'cpf',
+              module_type: (metadata?.module_title || metadata?.moduleTypeTitle || 'cpf'),
               document: cpf,
               cost: finalCost,
               status: 'completed',
@@ -727,13 +728,23 @@ const ConsultarCpfPuxaTudo = () => {
       const response = await consultationApiService.getConsultationHistory(5, 0);
       
       if (response.success && response.data && Array.isArray(response.data)) {
-        // Filtrar apenas consultas CPF e formatar para o ConsultationsSection
+        // Após a mudança, `module_type` passa a ser o TÍTULO do módulo (ex.: "CPF SIMPLES").
+        // Mantemos compatibilidade com registros antigos ("cpf") e também aceitamos outros módulos CPF.
+        const moduleTitle = (currentModule?.title || '').toString().trim();
+        const matchesCpfModules = (mt: any) => {
+          const v = (mt ?? '').toString().toLowerCase();
+          if (!v) return false;
+          if (v === 'cpf') return true;
+          if (moduleTitle && v === moduleTitle.toLowerCase()) return true;
+          return v.includes('cpf');
+        };
+
         const cpfConsultations = response.data
-          .filter(item => item.module_type === 'cpf')
+          .filter(item => matchesCpfModules(item?.module_type))
           .map((consultation: any) => ({
             id: `consultation-${consultation.id}`,
             type: 'consultation',
-            module_type: 'cpf',
+            module_type: consultation.module_type,
             document: consultation.document,
             cost: consultation.cost,
             amount: -Math.abs(consultation.cost),
@@ -1029,8 +1040,11 @@ const ConsultarCpfPuxaTudo = () => {
       console.log('📊 [STATS] Resposta da API:', response);
       
       if (response.success && Array.isArray(response.data) && response.data.length > 0) {
-        // Filtrar apenas consultas CPF
-        const cpfConsultations = response.data.filter((c: any) => c.module_type === 'cpf');
+        // Filtrar consultas relacionadas a CPF (agora module_type pode ser o título do módulo)
+        const cpfConsultations = response.data.filter((c: any) => {
+          const mt = (c?.module_type ?? '').toString().toLowerCase();
+          return mt === 'cpf' || mt.includes('cpf');
+        });
         
         console.log('📊 [STATS] Consultas CPF encontradas:', cpfConsultations.length);
         
@@ -1427,7 +1441,8 @@ const ConsultarCpfPuxaTudo = () => {
         user_name: user.full_name || user.email || 'Arte Pura', // Nome do usuário para o Telegram
         session_token: sessionToken,
         plan_balance: planBalance,
-        wallet_balance: walletBalance
+        wallet_balance: walletBalance,
+        module_title: currentModule?.title || 'CPF SIMPLES'
       });
       
       console.log('📊 [HANDLE_SEARCH] Resultado da consulta:', {
@@ -2637,6 +2652,7 @@ Todos os direitos reservados.`;
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-40 whitespace-nowrap">CPF</TableHead>
+                        <TableHead className="min-w-[180px] whitespace-nowrap">Módulo</TableHead>
                         <TableHead className="min-w-[180px] whitespace-nowrap">Data e Hora</TableHead>
                         <TableHead className="w-28 text-right whitespace-nowrap">Valor</TableHead>
                         <TableHead className="w-28 text-center whitespace-nowrap">Status</TableHead>
@@ -2658,6 +2674,9 @@ Todos os direitos reservados.`;
                           >
                             <TableCell className="font-mono text-xs sm:text-sm whitespace-nowrap">
                               {formatCPF(consultation.document || '')}
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm whitespace-nowrap">
+                              {consultation.module_type || '-'}
                             </TableCell>
                             <TableCell className="text-xs sm:text-sm whitespace-nowrap">
                               {formatFullDate(consultation.created_at)}
