@@ -730,13 +730,21 @@ const ConsultarCpfPuxaTudo = () => {
       const response = await consultationApiService.getConsultationHistory(5, 0);
       
       if (response.success && response.data && Array.isArray(response.data)) {
-        // Filtrar apenas consultas CPF e formatar para o ConsultationsSection
+        const getModuleLabel = (route?: string) => {
+          const r = (route || '').toString();
+          if (!r) return '-';
+          if (r.includes('/dashboard/consultar-cpf-simples')) return 'CPF SIMPLES';
+          if (r.includes('/dashboard/consultar-cpf-puxa-tudo')) return 'CPF PUXA TUDO';
+          return r;
+        };
+
+        // Fonte de verdade: metadata.page_route (sem fallback)
         const cpfConsultations = response.data
-          .filter(item => item.module_type === 'cpf')
+          .filter((item: any) => (item?.metadata?.page_route || '') === window.location.pathname)
           .map((consultation: any) => ({
             id: `consultation-${consultation.id}`,
             type: 'consultation',
-            module_type: 'cpf',
+            module_type: getModuleLabel(consultation?.metadata?.page_route),
             document: consultation.document,
             cost: consultation.cost,
             amount: -Math.abs(consultation.cost),
@@ -744,7 +752,8 @@ const ConsultarCpfPuxaTudo = () => {
             created_at: consultation.created_at,
             updated_at: consultation.updated_at,
             description: `Consulta CPF ${consultation.document.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}`,
-            result_data: consultation.result_data
+            result_data: consultation.result_data,
+            metadata: consultation.metadata
           }));
         
         setRecentConsultations(cpfConsultations);
@@ -3123,6 +3132,9 @@ Todos os direitos reservados.`;
                               <div className="font-mono text-xs truncate">
                                 {formatCPF(consultation.document || '')}
                               </div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                {consultation.module_type || '-'}
+                              </div>
                               <div className="text-xs text-muted-foreground mt-0.5">
                                 {formatFullDate(consultation.created_at)}
                               </div>
@@ -3150,6 +3162,7 @@ Todos os direitos reservados.`;
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-40 whitespace-nowrap">CPF</TableHead>
+                        <TableHead className="min-w-[180px] whitespace-nowrap">Módulo</TableHead>
                         <TableHead className="min-w-[180px] whitespace-nowrap">Data e Hora</TableHead>
                         <TableHead className="w-28 text-right whitespace-nowrap">Valor</TableHead>
                         <TableHead className="w-28 text-center whitespace-nowrap">Status</TableHead>
@@ -3171,6 +3184,9 @@ Todos os direitos reservados.`;
                           >
                             <TableCell className="font-mono text-xs sm:text-sm whitespace-nowrap">
                               {formatCPF(consultation.document || '')}
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm whitespace-nowrap">
+                              {consultation.module_type || '-'}
                             </TableCell>
                             <TableCell className="text-xs sm:text-sm whitespace-nowrap">
                               {formatFullDate(consultation.created_at)}

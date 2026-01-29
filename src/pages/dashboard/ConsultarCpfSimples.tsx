@@ -177,7 +177,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           user_agent: navigator.userAgent,
           saldo_usado: saldoUsado, // Incluir o tipo de saldo usado
             metadata: {
-              source: 'consultar-cpf-puxa-tudo',
+              source: 'consultar-cpf-simples',
               page_route: window.location.pathname,
               discount: metadata.discount || 0,
               original_price: metadata.original_price || finalCost, // preço original sem desconto do módulo ID 83
@@ -737,23 +737,21 @@ const ConsultarCpfPuxaTudo = () => {
       const response = await consultationApiService.getConsultationHistory(5, 0);
       
       if (response.success && response.data && Array.isArray(response.data)) {
-        // Após a mudança, `module_type` passa a ser o TÍTULO do módulo (ex.: "CPF SIMPLES").
-        // Mantemos compatibilidade com registros antigos ("cpf") e também aceitamos outros módulos CPF.
-        const moduleTitle = (currentModule?.title || '').toString().trim();
-        const matchesCpfModules = (mt: any) => {
-          const v = (mt ?? '').toString().toLowerCase();
-          if (!v) return false;
-          if (v === 'cpf') return true;
-          if (moduleTitle && v === moduleTitle.toLowerCase()) return true;
-          return v.includes('cpf');
+        const getModuleLabel = (route?: string) => {
+          const r = (route || '').toString();
+          if (!r) return '-';
+          if (r.includes('/dashboard/consultar-cpf-simples')) return 'CPF SIMPLES';
+          if (r.includes('/dashboard/consultar-cpf-puxa-tudo')) return 'CPF PUXA TUDO';
+          return r;
         };
 
+        // Fonte de verdade: metadata.page_route (sem fallback)
         const cpfConsultations = response.data
-          .filter(item => matchesCpfModules(item?.module_type))
+          .filter((item: any) => (item?.metadata?.page_route || '') === window.location.pathname)
           .map((consultation: any) => ({
             id: `consultation-${consultation.id}`,
             type: 'consultation',
-            module_type: consultation.module_type,
+            module_type: getModuleLabel(consultation?.metadata?.page_route),
             document: consultation.document,
             cost: consultation.cost,
             amount: -Math.abs(consultation.cost),
@@ -761,7 +759,8 @@ const ConsultarCpfPuxaTudo = () => {
             created_at: consultation.created_at,
             updated_at: consultation.updated_at,
             description: `Consulta CPF ${consultation.document.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}`,
-            result_data: consultation.result_data
+            result_data: consultation.result_data,
+            metadata: consultation.metadata
           }));
         
         setRecentConsultations(cpfConsultations);
@@ -2623,6 +2622,9 @@ Todos os direitos reservados.`;
                             <div className="min-w-0">
                               <div className="font-mono text-xs truncate">
                                 {formatCPF(consultation.document || '')}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                {consultation.module_type || '-'}
                               </div>
                               <div className="text-xs text-muted-foreground mt-0.5">
                                 {formatFullDate(consultation.created_at)}
