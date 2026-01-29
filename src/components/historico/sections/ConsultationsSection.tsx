@@ -36,8 +36,9 @@ const ConsultationsSection: React.FC<ConsultationsSectionProps> = ({
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  const consultationItems = allHistory.filter(item => 
-    'type' in item && (item.type === 'consultation' || item.type === 'Consulta CPF' || item.module_type === 'cpf'));
+  const consultationItems = allHistory.filter(item =>
+    'type' in item && (item.type === 'consultation' || item.type === 'Consulta CPF')
+  );
 
   const handleConsultationClick = (consultation: any) => {
     if (!consultation.result_data) {
@@ -45,8 +46,14 @@ const ConsultationsSection: React.FC<ConsultationsSectionProps> = ({
       return;
     }
 
+    const pageRoute = consultation?.metadata?.page_route;
+    if (!pageRoute) {
+      toast.error('Não foi possível identificar o módulo desta consulta (page_route ausente)');
+      return;
+    }
+
     // Redirecionar para página de consulta com os dados no state
-    navigate('/dashboard/consultar-cpf-puxa-tudo', {
+    navigate(pageRoute, {
       state: {
         fromHistory: true,
         consultationData: consultation.result_data,

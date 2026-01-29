@@ -178,6 +178,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           saldo_usado: saldoUsado, // Incluir o tipo de saldo usado
             metadata: {
               source: 'consultar-cpf-puxa-tudo',
+              page_route: window.location.pathname,
               discount: metadata.discount || 0,
               original_price: metadata.original_price || finalCost, // preço original sem desconto do módulo ID 83
               discounted_price: finalCost, // preço final com desconto aplicado (mesmo que cost)
@@ -325,6 +326,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           saldo_usado: saldoUsado,
           metadata: {
             source: 'consultar-cpf-puxa-tudo-precheck',
+            page_route: window.location.pathname,
             discount: metadata.discount || 0,
             original_price: metadata.original_price || finalCost,
             discounted_price: finalCost,
@@ -403,6 +405,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
               saldo_usado: saldoUsado,
               metadata: {
                 source: 'railway-flow',
+                page_route: window.location.pathname,
                 discount: metadata.discount || 0,
                 original_price: metadata.original_price || finalCost,
                 discounted_price: finalCost,
