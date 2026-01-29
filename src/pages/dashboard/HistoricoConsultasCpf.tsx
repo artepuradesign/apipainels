@@ -73,8 +73,14 @@ const HistoricoConsultasCpf: React.FC = () => {
 
       const consultationData = (res.data as any).result_data ?? res.data;
       const cpf = (res.data as any).document ?? item.document;
+      const pageRoute = (res.data as any)?.metadata?.page_route;
 
-      navigate('/dashboard/consultar-cpf-puxa-tudo', {
+      if (!pageRoute) {
+        toast.error('Não foi possível identificar o módulo desta consulta (page_route ausente)');
+        return;
+      }
+
+      navigate(pageRoute, {
         state: {
           fromHistory: true,
           consultationData,
