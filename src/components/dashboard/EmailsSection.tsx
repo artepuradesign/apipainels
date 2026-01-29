@@ -13,9 +13,11 @@ import { formatDateOnly } from '@/utils/formatters';
 interface EmailsSectionProps {
   cpfId?: number;
   onCountChange?: (count: number) => void;
+  /** Modo compacto para telas específicas (ex.: CPF Simples) */
+  compact?: boolean;
 }
 
-const EmailsSection: React.FC<EmailsSectionProps> = ({ cpfId, onCountChange }) => {
+const EmailsSection: React.FC<EmailsSectionProps> = ({ cpfId, onCountChange, compact = false }) => {
   const { isLoading, getEmailsByCpfId } = useBaseEmail();
   const [emails, setEmails] = useState<BaseEmail[]>([]);
 
@@ -52,17 +54,19 @@ const EmailsSection: React.FC<EmailsSectionProps> = ({ cpfId, onCountChange }) =
     const dados = emails.map((email, idx) => 
       `Email ${idx + 1}:\n` +
       `Endereço: ${email.email || '-'}\n` +
-      `Prioridade: ${email.prioridade ?? '-'}\n` +
       `Score: ${email.score_email || '-'}\n` +
-      `Pessoal: ${email.email_pessoal || '-'}\n` +
-      `Duplicado: ${email.email_duplicado || '-'}\n` +
-      `Blacklist: ${email.blacklist || '-'}\n` +
-      `Estrutura: ${email.estrutura || '-'}\n` +
-      `Status VT: ${email.status_vt || '-'}\n` +
-      `Domínio: ${email.dominio || '-'}\n` +
-      `Mapas: ${email.mapas ?? '-'}\n` +
-      `Peso: ${email.peso ?? '-'}\n` +
-      `Data inclusão: ${safeDataInclusao(email.data_inclusao)}`
+      `Pessoal: ${email.email_pessoal || '-'}` +
+      (compact
+        ? ''
+        : `\nPrioridade: ${email.prioridade ?? '-'}\n` +
+          `Duplicado: ${email.email_duplicado || '-'}\n` +
+          `Blacklist: ${email.blacklist || '-'}\n` +
+          `Estrutura: ${email.estrutura || '-'}\n` +
+          `Status VT: ${email.status_vt || '-'}\n` +
+          `Domínio: ${email.dominio || '-'}\n` +
+          `Mapas: ${email.mapas ?? '-'}\n` +
+          `Peso: ${email.peso ?? '-'}\n` +
+          `Data inclusão: ${safeDataInclusao(email.data_inclusao)}`)
     ).join('\n\n');
 
     navigator.clipboard.writeText(dados);
@@ -144,16 +148,6 @@ const EmailsSection: React.FC<EmailsSectionProps> = ({ cpfId, onCountChange }) =
                   </div>
 
                   <div>
-                    <Label htmlFor={`prioridade_${email.id}`}>Prioridade</Label>
-                    <Input
-                      id={`prioridade_${email.id}`}
-                      value={email.prioridade ?? ''}
-                      disabled
-                      className="text-[14px] md:text-sm"
-                    />
-                  </div>
-
-                  <div>
                     <Label htmlFor={`score_${email.id}`}>Score</Label>
                     <Input
                       id={`score_${email.id}`}
@@ -173,85 +167,99 @@ const EmailsSection: React.FC<EmailsSectionProps> = ({ cpfId, onCountChange }) =
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor={`duplicado_${email.id}`}>Duplicado</Label>
-                    <Input
-                      id={`duplicado_${email.id}`}
-                      value={email.email_duplicado || ''}
-                      disabled
-                      className="uppercase text-[14px] md:text-sm"
-                    />
-                  </div>
+                  {!compact ? (
+                    <>
+                      <div>
+                        <Label htmlFor={`prioridade_${email.id}`}>Prioridade</Label>
+                        <Input
+                          id={`prioridade_${email.id}`}
+                          value={email.prioridade ?? ''}
+                          disabled
+                          className="text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor={`blacklist_${email.id}`}>Blacklist</Label>
-                    <Input
-                      id={`blacklist_${email.id}`}
-                      value={email.blacklist || ''}
-                      disabled
-                      className="uppercase text-[14px] md:text-sm"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor={`duplicado_${email.id}`}>Duplicado</Label>
+                        <Input
+                          id={`duplicado_${email.id}`}
+                          value={email.email_duplicado || ''}
+                          disabled
+                          className="uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor={`estrutura_${email.id}`}>Estrutura</Label>
-                    <Input
-                      id={`estrutura_${email.id}`}
-                      value={email.estrutura || ''}
-                      disabled
-                      className="uppercase text-[14px] md:text-sm"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor={`blacklist_${email.id}`}>Blacklist</Label>
+                        <Input
+                          id={`blacklist_${email.id}`}
+                          value={email.blacklist || ''}
+                          disabled
+                          className="uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor={`statusvt_${email.id}`}>Status VT</Label>
-                    <Input
-                      id={`statusvt_${email.id}`}
-                      value={email.status_vt || ''}
-                      disabled
-                      className="uppercase text-[14px] md:text-sm"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor={`estrutura_${email.id}`}>Estrutura</Label>
+                        <Input
+                          id={`estrutura_${email.id}`}
+                          value={email.estrutura || ''}
+                          disabled
+                          className="uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor={`dominio_${email.id}`}>Domínio</Label>
-                    <Input
-                      id={`dominio_${email.id}`}
-                      value={email.dominio || ''}
-                      disabled
-                      className="uppercase text-[14px] md:text-sm"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor={`statusvt_${email.id}`}>Status VT</Label>
+                        <Input
+                          id={`statusvt_${email.id}`}
+                          value={email.status_vt || ''}
+                          disabled
+                          className="uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor={`mapas_${email.id}`}>Mapas</Label>
-                    <Input
-                      id={`mapas_${email.id}`}
-                      value={email.mapas ?? ''}
-                      disabled
-                      className="text-[14px] md:text-sm"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor={`dominio_${email.id}`}>Domínio</Label>
+                        <Input
+                          id={`dominio_${email.id}`}
+                          value={email.dominio || ''}
+                          disabled
+                          className="uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor={`peso_${email.id}`}>Peso</Label>
-                    <Input
-                      id={`peso_${email.id}`}
-                      value={email.peso ?? ''}
-                      disabled
-                      className="text-[14px] md:text-sm"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor={`mapas_${email.id}`}>Mapas</Label>
+                        <Input
+                          id={`mapas_${email.id}`}
+                          value={email.mapas ?? ''}
+                          disabled
+                          className="text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor={`data_${email.id}`}>Data inclusão</Label>
-                    <Input
-                      id={`data_${email.id}`}
-                      value={email.data_inclusao && email.data_inclusao !== '0000-00-00' ? formatDateOnly(email.data_inclusao) : '-'}
-                      disabled
-                      className="text-[14px] md:text-sm"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor={`peso_${email.id}`}>Peso</Label>
+                        <Input
+                          id={`peso_${email.id}`}
+                          value={email.peso ?? ''}
+                          disabled
+                          className="text-[14px] md:text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`data_${email.id}`}>Data inclusão</Label>
+                        <Input
+                          id={`data_${email.id}`}
+                          value={email.data_inclusao && email.data_inclusao !== '0000-00-00' ? formatDateOnly(email.data_inclusao) : '-'}
+                          disabled
+                          className="text-[14px] md:text-sm"
+                        />
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))}

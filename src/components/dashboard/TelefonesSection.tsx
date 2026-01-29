@@ -21,9 +21,11 @@ const formatLocalPhone = (value: string) => {
 interface TelefonesSectionProps {
   cpfId?: number;
   onCountChange?: (count: number) => void;
+  /** Modo compacto para telas específicas (ex.: CPF Simples) */
+  compact?: boolean;
 }
 
-const TelefonesSection: React.FC<TelefonesSectionProps> = ({ cpfId, onCountChange }) => {
+const TelefonesSection: React.FC<TelefonesSectionProps> = ({ cpfId, onCountChange, compact = false }) => {
   const { isLoading, getTelefonesByCpfId } = useBaseTelefone();
   const [telefones, setTelefones] = useState<BaseTelefone[]>([]);
 
@@ -56,10 +58,12 @@ const TelefonesSection: React.FC<TelefonesSectionProps> = ({ cpfId, onCountChang
       `Telefone ${idx + 1}:\n` +
       `DDD: ${tel.ddd || '-'}\n` +
       `Número: ${formatLocalPhone(tel.telefone) || '-'}\n` +
-      `Tipo: ${tel.tipo_texto || '-'}\n` +
-      `Classificação: ${tel.classificacao || '-'}\n` +
-      `Sigilo: ${tel.sigilo ? 'Sim' : 'Não'}\n` +
-      `Data Inclusão: ${tel.data_inclusao ? formatDateOnly(tel.data_inclusao) : '-'}`
+      `Tipo: ${tel.tipo_texto || '-'}` +
+      (compact
+        ? ''
+        : `\nClassificação: ${tel.classificacao || '-'}\n` +
+          `Sigilo: ${tel.sigilo ? 'Sim' : 'Não'}\n` +
+          `Data Inclusão: ${tel.data_inclusao ? formatDateOnly(tel.data_inclusao) : '-'}`)
     ).join('\n\n');
 
     navigator.clipboard.writeText(dados);
@@ -160,35 +164,39 @@ const TelefonesSection: React.FC<TelefonesSectionProps> = ({ cpfId, onCountChang
                     />
                   </div>
 
-                    <div>
-                      <Label htmlFor={`class_${telefone.id}`}>Classificação</Label>
-                      <Input
-                        id={`class_${telefone.id}`}
-                        value={telefone.classificacao || '-'}
-                        disabled
-                        className="bg-muted uppercase text-[14px] md:text-sm"
-                      />
-                    </div>
+                  {!compact ? (
+                    <>
+                      <div>
+                        <Label htmlFor={`class_${telefone.id}`}>Classificação</Label>
+                        <Input
+                          id={`class_${telefone.id}`}
+                          value={telefone.classificacao || '-'}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                    <div>
-                      <Label htmlFor={`sigilo_${telefone.id}`}>Sigilo</Label>
-                      <Input
-                        id={`sigilo_${telefone.id}`}
-                        value={telefone.sigilo ? 'Sim' : 'Não'}
-                        disabled
-                        className="bg-muted text-[14px] md:text-sm"
-                      />
-                    </div>
+                      <div>
+                        <Label htmlFor={`sigilo_${telefone.id}`}>Sigilo</Label>
+                        <Input
+                          id={`sigilo_${telefone.id}`}
+                          value={telefone.sigilo ? 'Sim' : 'Não'}
+                          disabled
+                          className="bg-muted text-[14px] md:text-sm"
+                        />
+                      </div>
 
-                    <div>
-                      <Label htmlFor={`dt_inc_${telefone.id}`}>Data Inclusão</Label>
-                      <Input
-                        id={`dt_inc_${telefone.id}`}
-                        value={telefone.data_inclusao ? formatDateOnly(telefone.data_inclusao) : '-'}
-                        disabled
-                        className="bg-muted text-[14px] md:text-sm"
-                      />
-                    </div>
+                      <div>
+                        <Label htmlFor={`dt_inc_${telefone.id}`}>Data Inclusão</Label>
+                        <Input
+                          id={`dt_inc_${telefone.id}`}
+                          value={telefone.data_inclusao ? formatDateOnly(telefone.data_inclusao) : '-'}
+                          disabled
+                          className="bg-muted text-[14px] md:text-sm"
+                        />
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))}
