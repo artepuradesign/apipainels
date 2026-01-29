@@ -1,0 +1,89 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
+import { useMinhaContaData } from '@/hooks/useMinhaContaData';
+import AccountInfo from '@/components/minha-conta/AccountInfo';
+import BasicInfoForm from '@/components/minha-conta/BasicInfoForm';
+import PasswordChangeForm from '@/components/minha-conta/PasswordChangeForm';
+import PageHeaderCard from '@/components/dashboard/PageHeaderCard';
+import { useLocation } from 'react-router-dom';
+
+
+const MinhaConta = () => {
+  const location = useLocation();
+  const {
+    userData,
+    loading,
+    saving,
+    handleInputChange,
+    handleSave
+  } = useMinhaContaData();
+
+  // Determinar título baseado na rota
+  const isNewRoute = location.pathname === '/dashboard/dados-pessoais';
+  const pageTitle = isNewRoute ? 'Dados Pessoais' : 'Minha Conta';
+  const pageSubtitle = isNewRoute 
+    ? 'Gerencie suas informações pessoais e configurações de conta'
+    : 'Visualize e edite suas informações pessoais';
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Erro ao carregar dados do usuário</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeaderCard 
+        title={pageTitle}
+        subtitle={pageSubtitle}
+      />
+
+      <AccountInfo userData={userData} />
+
+      <BasicInfoForm
+        userData={userData}
+        onInputChange={handleInputChange}
+      />
+
+      <PasswordChangeForm />
+
+      {/* Botão Salvar */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-brand-purple hover:bg-brand-darkPurple"
+        >
+          {saving ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Salvando...
+            </div>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Salvar Informações
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default MinhaConta;
