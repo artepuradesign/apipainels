@@ -736,8 +736,8 @@ const ConsultarCpfPuxaTudo = () => {
       setRecentConsultationsLoading(true);
       console.log('📋 [RECENT_CONSULTATIONS] Carregando últimas 5 consultas CPF...');
       
-      // Usar o endpoint do consultationApiService para manter consistência com /dashboard/historico
-      const response = await consultationApiService.getConsultationHistory(5, 0);
+      // Buscar um lote maior para garantir 5 itens mesmo após o filtro por rota
+      const response = await consultationApiService.getConsultationHistory(50, 0);
       
       if (response.success && response.data && Array.isArray(response.data)) {
         const getModuleLabel = (route?: string) => {
@@ -764,7 +764,10 @@ const ConsultarCpfPuxaTudo = () => {
             description: `Consulta CPF ${consultation.document.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}`,
             result_data: consultation.result_data,
             metadata: consultation.metadata
-          }));
+          }))
+          // Mais recente primeiro
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5);
         
         setRecentConsultations(cpfConsultations);
         console.log('✅ [RECENT_CONSULTATIONS] Últimas consultas carregadas:', cpfConsultations.length);
