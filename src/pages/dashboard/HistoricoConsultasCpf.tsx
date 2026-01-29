@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, FileText, RefreshCw } from 'lucide-react';
+import { RefreshCw, FileText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { consultasCpfHistoryService, type ConsultaCpfHistoryItem } from '@/services/consultasCpfHistoryService';
 import { consultationsService } from '@/services/consultationsService';
 import { toast } from 'sonner';
+import SimpleTitleBar from '@/components/dashboard/SimpleTitleBar';
 
 const formatCPF = (cpf: string) => {
   if (!cpf || cpf === 'CPF consultado') return 'N/A';
@@ -60,6 +61,33 @@ const HistoricoConsultasCpf: React.FC = () => {
 
   const total = items.length;
 
+  const title = useMemo(() => {
+    // “• N” conforme solicitado (apenas número, sem texto “registros”)
+    return `Histórico de Consultas (CPF) • ${total}`;
+  }, [total]);
+
+  const getModuloLabel = (item: ConsultaCpfHistoryItem): string => {
+    const moduleTitle = (item as any)?.metadata?.module_title;
+    if (typeof moduleTitle === 'string' && moduleTitle.trim()) return moduleTitle.trim();
+
+    const pageRoute = (item as any)?.metadata?.page_route?.toString?.() || '';
+    const route = pageRoute.toLowerCase();
+
+    if (route.includes('consultar-cpf-simples')) return 'CPF Simples';
+    if (route.includes('consultar-cpf-puxa-tudo')) return 'CPF Puxa Tudo';
+    if (route.includes('consultar-cpf-simple')) return 'CPF Simples';
+
+    return '—';
+  };
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/dashboard');
+  };
+
   const openConsultation = async (item: ConsultaCpfHistoryItem) => {
     // Recarregar do banco (API) e abrir na tela de consulta SEM cobrar
     setOpeningId(item.id);
@@ -97,35 +125,30 @@ const HistoricoConsultasCpf: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="px-4 md:px-6">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                <FileText className="h-4 w-4 md:h-5 md:w-5" />
-                Histórico de Consultas (CPF)
-              </CardTitle>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{total} registros</Badge>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Toque em um registro para recarregar do banco e abrir sem cobrança.
-              </p>
-            </div>
+    <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
+      <div className="w-full max-w-6xl mx-auto">
+        <SimpleTitleBar
+          title={title}
+          subtitle="Toque em um registro para recarregar do banco e abrir sem cobrança."
+          icon={<FileText className="h-4 w-4 md:h-5 md:w-5" />}
+          onBack={handleBack}
+          right={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={load}
+              disabled={loading}
+              className="h-9 w-9 p-0"
+              aria-label="Atualizar"
+              title="Atualizar"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          }
+        />
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/consultar-cpf-puxa-tudo')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Button>
-              <Button variant="ghost" size="sm" onClick={load} disabled={loading} className="h-9 w-9 p-0" aria-label="Atualizar">
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 md:px-6">
+        <Card className="mt-4 md:mt-6">
+          <CardContent className="px-4 pb-4 md:px-6">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -139,6 +162,7 @@ const HistoricoConsultasCpf: React.FC = () => {
             <div className="space-y-2">
               {items.map((item) => {
                 const isOpening = openingId === item.id;
+                const modulo = getModuloLabel(item);
 
                 return (
                   <button
@@ -163,6 +187,7 @@ const HistoricoConsultasCpf: React.FC = () => {
                           <div className="font-mono text-xs truncate">{formatCPF(item.document)}</div>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">{formatFullDate(item.created_at)}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5 truncate">{modulo}</div>
                       </div>
 
                       {isOpening ? (
@@ -184,6 +209,7 @@ const HistoricoConsultasCpf: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-52 whitespace-nowrap">CPF</TableHead>
+                  <TableHead className="whitespace-nowrap">Módulo</TableHead>
                   <TableHead className="whitespace-nowrap">Data e Hora</TableHead>
                   <TableHead className="w-32 text-right whitespace-nowrap">Valor</TableHead>
                   <TableHead className="w-28 text-center whitespace-nowrap">Status</TableHead>
@@ -197,6 +223,7 @@ const HistoricoConsultasCpf: React.FC = () => {
                     onClick={() => openConsultation(item)}
                   >
                     <TableCell className="font-mono text-sm whitespace-nowrap">{formatCPF(item.document)}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">{getModuloLabel(item)}</TableCell>
                     <TableCell className="text-sm whitespace-nowrap">{formatFullDate(item.created_at)}</TableCell>
                     <TableCell className="text-right text-sm font-medium text-destructive whitespace-nowrap">
                       {formatCurrency(Number(item.cost) || 0)}
@@ -218,8 +245,9 @@ const HistoricoConsultasCpf: React.FC = () => {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
