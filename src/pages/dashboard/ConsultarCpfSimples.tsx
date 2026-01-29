@@ -79,6 +79,7 @@ import SectionActionButtons from '@/components/dashboard/SectionActionButtons';
 import PisSection from '@/components/dashboard/PisSection';
 import ScrollToTop from '@/components/ui/scroll-to-top';
 import SimpleTitleBar from '@/components/dashboard/SimpleTitleBar';
+import { smoothScrollToHash } from '@/utils/smoothScroll';
 
 // Função melhorada para consultar CPF e registrar com debug robusto
 const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any) => {
@@ -2273,10 +2274,18 @@ Todos os direitos reservados.`;
 
                 return (
                   <div className="flex flex-wrap gap-2">
-                     {onlineBadges.map((b) => {
+                      {onlineBadges.map((b) => {
                        const count = badgeCounts[b.href] ?? 0;
                        return (
-                      <a key={b.href} href={b.href} className="no-underline">
+                       <a
+                         key={b.href}
+                         href={b.href}
+                         className="no-underline"
+                         onClick={(e) => {
+                           e.preventDefault();
+                           smoothScrollToHash(b.href, { duration: 250, offsetTop: 96 });
+                         }}
+                       >
                          <span className="relative inline-flex">
                            <Badge variant="secondary" className={badgeClassName}>
                              {b.label}
