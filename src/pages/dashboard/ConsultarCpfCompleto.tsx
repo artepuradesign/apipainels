@@ -593,7 +593,7 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
   const source = sourceProp ?? 'consultar-cpf-completo';
   const navigate = useNavigate();
   const location = useLocation();
-  // No módulo CPF FOTO (ID 23) a UI deve exibir apenas: Fotos, Dados Básicos, Telefones, Emails e Endereços.
+  // No módulo CPF FOTO (ID 23) a UI deve exibir apenas: Fotos.
   const isCpfFoto =
     moduleId === 23 || source === 'consultar-cpf-foto' || location.pathname.includes('/dashboard/consultar-cpf-foto');
   const [cpf, setCpf] = useState('');
@@ -2338,13 +2338,7 @@ Todos os direitos reservados.`;
                   ] as const;
 
                   const onlineBadges = isCpfFoto
-                    ? ([
-                        { href: '#fotos-section', label: 'Fotos' },
-                        { href: '#dados-basicos-section', label: 'Dados Básicos' },
-                        { href: '#telefones-section', label: 'Telefones' },
-                        { href: '#emails-section', label: 'Emails' },
-                        { href: '#enderecos-section', label: 'Endereços' },
-                      ] as const)
+                    ? ([{ href: '#fotos-section', label: 'Fotos' }] as const)
                     : allOnlineBadges;
 
                  const badgeCounts: Record<string, number> = {
@@ -2593,247 +2587,251 @@ Todos os direitos reservados.`;
               </>
             ) : null}
 
-          {/* Dados Básicos */}
-          <Card id="dados-basicos-section" className={onlineCardClass(hasDadosBasicos) ? `w-full ${onlineCardClass(hasDadosBasicos)}` : "w-full"}>
-            <CardHeader className="p-4 md:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl min-w-0">
-                  <User className="h-5 w-5 flex-shrink-0" />
-                  <span className="truncate">Dados Básicos</span>
-                </CardTitle>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      const dados = [
-                        `CPF: ${result.cpf ? result.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : '-'}`,
-                        `Nome: ${result.nome || '-'}`,
-                        `Data de Nascimento: ${result.data_nascimento ? formatDateOnly(result.data_nascimento) : '-'}`,
-                        `Sexo: ${result.sexo ? (result.sexo.toLowerCase() === 'm' ? 'Masculino' : result.sexo.toLowerCase() === 'f' ? 'Feminino' : result.sexo) : '-'}`,
-                        `Nome da Mãe: ${(result.mae || result.nome_mae) || '-'}`,
-                        `Nome do Pai: ${(result.pai || result.nome_pai) || '-'}`,
-                        `Estado Civil: ${result.estado_civil || '-'}`,
-                        `RG: ${result.rg || '-'}`,
-                        `CBO: ${result.cbo || '-'}`,
-                        `Órgão Emissor: ${result.orgao_emissor || '-'}`,
-                        `UF Emissor: ${result.uf_emissao || '-'}`,
-                        `Data de Óbito: ${result.data_obito ? new Date(result.data_obito).toLocaleDateString('pt-BR') : '-'}`,
-                        `Renda: ${formatRenda(result.renda) || '-'}`,
-                        `Título de Eleitor: ${result.titulo_eleitor || '-'}`,
-                      ].join('\n');
-                      navigator.clipboard.writeText(dados);
-                      toast.success('Dados básicos copiados!');
-                    }}
-                    className="h-8 w-8"
-                    title="Copiar dados da seção"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-
-                  <div className="relative inline-flex">
-                    <Badge variant="secondary" className="uppercase tracking-wide">
-                      Online
-                    </Badge>
-                    {dadosBasicosCount > 0 ? (
-                      <span
-                        className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-1 ring-background"
-                        aria-label={`Quantidade de registros Dados Básicos: ${dadosBasicosCount}`}
+          {!isCpfFoto ? (
+            <>
+              {/* Dados Básicos */}
+              <Card id="dados-basicos-section" className={onlineCardClass(hasDadosBasicos) ? `w-full ${onlineCardClass(hasDadosBasicos)}` : "w-full"}>
+                <CardHeader className="p-4 md:p-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl min-w-0">
+                      <User className="h-5 w-5 flex-shrink-0" />
+                      <span className="truncate">Dados Básicos</span>
+                    </CardTitle>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const dados = [
+                            `CPF: ${result.cpf ? result.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : '-'}`,
+                            `Nome: ${result.nome || '-'}`,
+                            `Data de Nascimento: ${result.data_nascimento ? formatDateOnly(result.data_nascimento) : '-'}`,
+                            `Sexo: ${result.sexo ? (result.sexo.toLowerCase() === 'm' ? 'Masculino' : result.sexo.toLowerCase() === 'f' ? 'Feminino' : result.sexo) : '-'}`,
+                            `Nome da Mãe: ${(result.mae || result.nome_mae) || '-'}`,
+                            `Nome do Pai: ${(result.pai || result.nome_pai) || '-'}`,
+                            `Estado Civil: ${result.estado_civil || '-'}`,
+                            `RG: ${result.rg || '-'}`,
+                            `CBO: ${result.cbo || '-'}`,
+                            `Órgão Emissor: ${result.orgao_emissor || '-'}`,
+                            `UF Emissor: ${result.uf_emissao || '-'}`,
+                            `Data de Óbito: ${result.data_obito ? new Date(result.data_obito).toLocaleDateString('pt-BR') : '-'}`,
+                            `Renda: ${formatRenda(result.renda) || '-'}`,
+                            `Título de Eleitor: ${result.titulo_eleitor || '-'}`,
+                          ].join('\n');
+                          navigator.clipboard.writeText(dados);
+                          toast.success('Dados básicos copiados!');
+                        }}
+                        className="h-8 w-8"
+                        title="Copiar dados da seção"
                       >
-                        {dadosBasicosCount}
-                      </span>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+
+                      <div className="relative inline-flex">
+                        <Badge variant="secondary" className="uppercase tracking-wide">
+                          Online
+                        </Badge>
+                        {dadosBasicosCount > 0 ? (
+                          <span
+                            className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-1 ring-background"
+                            aria-label={`Quantidade de registros Dados Básicos: ${dadosBasicosCount}`}
+                          >
+                            {dadosBasicosCount}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 md:p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                    <div>
+                      <Label className="text-xs sm:text-sm" htmlFor="cpf">CPF</Label>
+                      <Input
+                        id="cpf"
+                        value={result.cpf ? result.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : ''}
+                        disabled
+                        className="bg-muted uppercase text-[14px] md:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs sm:text-sm" htmlFor="nome">Nome Completo</Label>
+                      <Input
+                        id="nome"
+                        value={result.nome || ''}
+                        disabled
+                        className="bg-muted uppercase text-[14px] md:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs sm:text-sm" htmlFor="data_nascimento">Data de Nascimento</Label>
+                      <Input
+                        id="data_nascimento"
+                        value={result.data_nascimento ? formatDateOnly(result.data_nascimento) : ''}
+                        disabled
+                        className="bg-muted text-[14px] md:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs sm:text-sm" htmlFor="sexo">Sexo</Label>
+                      <Input
+                        id="sexo"
+                        value={(result.sexo
+                          ? (result.sexo.toLowerCase() === 'm'
+                            ? 'Masculino'
+                            : result.sexo.toLowerCase() === 'f'
+                              ? 'Feminino'
+                              : result.sexo.toLowerCase() === 'i'
+                                ? 'Indefinido'
+                                : result.sexo)
+                          : '').toUpperCase()}
+                        disabled
+                        className="bg-muted text-[14px] md:text-sm"
+                      />
+                    </div>
+
+                    {result.mae || result.nome_mae ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="mae">Nome da Mãe</Label>
+                        <Input
+                          id="mae"
+                          value={(result.mae || result.nome_mae) || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.pai || result.nome_pai ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="pai">Nome do Pai</Label>
+                        <Input
+                          id="pai"
+                          value={(result.pai || result.nome_pai) || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.estado_civil ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="estado_civil">Estado Civil</Label>
+                        <Input
+                          id="estado_civil"
+                          value={result.estado_civil || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.rg ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="rg">RG</Label>
+                        <Input
+                          id="rg"
+                          value={result.rg || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.cbo ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="cbo">CBO</Label>
+                        <Input
+                          id="cbo"
+                          value={result.cbo || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.orgao_emissor ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="orgao_emissor">Órgão Emissor</Label>
+                        <Input
+                          id="orgao_emissor"
+                          value={result.orgao_emissor || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.uf_emissao ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="uf_emissao">UF Emissor</Label>
+                        <Input
+                          id="uf_emissao"
+                          value={result.uf_emissao || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.data_obito ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="data_obito">Data Óbito</Label>
+                        <Input
+                          id="data_obito"
+                          value={result.data_obito ? new Date(result.data_obito).toLocaleDateString('pt-BR') : ''}
+                          disabled
+                          className="bg-muted text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.renda ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="renda_basicos">Renda</Label>
+                        <Input
+                          id="renda_basicos"
+                          value={formatRenda(result.renda)}
+                          disabled
+                          className="bg-muted text-[14px] md:text-sm"
+                        />
+                      </div>
+                    ) : null}
+
+                    {result.titulo_eleitor ? (
+                      <div>
+                        <Label className="text-xs sm:text-sm" htmlFor="titulo_eleitor_basicos">Título de Eleitor</Label>
+                        <Input
+                          id="titulo_eleitor_basicos"
+                          value={result.titulo_eleitor || ''}
+                          disabled
+                          className="bg-muted uppercase text-[14px] md:text-sm"
+                        />
+                      </div>
                     ) : null}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+
+              {/* Telefones */}
+              <div id="telefones-section">
+                <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4 md:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="cpf">CPF</Label>
-                  <Input
-                    id="cpf"
-                    value={result.cpf ? result.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="nome">Nome Completo</Label>
-                  <Input
-                    id="nome"
-                    value={result.nome || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
 
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="data_nascimento">Data de Nascimento</Label>
-                  <Input
-                    id="data_nascimento"
-                value={result.data_nascimento ? formatDateOnly(result.data_nascimento) : ''}
-                    disabled
-                     className="bg-muted text-[14px] md:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="sexo">Sexo</Label>
-                  <Input
-                    id="sexo"
-                    value={(result.sexo
-                      ? (result.sexo.toLowerCase() === 'm'
-                        ? 'Masculino'
-                        : result.sexo.toLowerCase() === 'f'
-                          ? 'Feminino'
-                          : result.sexo.toLowerCase() === 'i'
-                            ? 'Indefinido'
-                            : result.sexo)
-                      : '').toUpperCase()}
-                    disabled
-                     className="bg-muted text-[14px] md:text-sm"
-                  />
-                </div>
-
-                {result.mae || result.nome_mae ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="mae">Nome da Mãe</Label>
-                  <Input
-                    id="mae"
-                    value={(result.mae || result.nome_mae) || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.pai || result.nome_pai ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="pai">Nome do Pai</Label>
-                  <Input
-                    id="pai"
-                    value={(result.pai || result.nome_pai) || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.estado_civil ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="estado_civil">Estado Civil</Label>
-                  <Input
-                    id="estado_civil"
-                    value={result.estado_civil || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.rg ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="rg">RG</Label>
-                  <Input
-                    id="rg"
-                    value={result.rg || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.cbo ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="cbo">CBO</Label>
-                  <Input
-                    id="cbo"
-                    value={result.cbo || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.orgao_emissor ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="orgao_emissor">Órgão Emissor</Label>
-                  <Input
-                    id="orgao_emissor"
-                    value={result.orgao_emissor || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.uf_emissao ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="uf_emissao">UF Emissor</Label>
-                  <Input
-                    id="uf_emissao"
-                    value={result.uf_emissao || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.data_obito ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="data_obito">Data Óbito</Label>
-                  <Input
-                    id="data_obito"
-                    value={result.data_obito ? new Date(result.data_obito).toLocaleDateString('pt-BR') : ''}
-                    disabled
-                     className="bg-muted text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {result.renda ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="renda_basicos">Renda</Label>
-                  <Input
-                    id="renda_basicos"
-                    value={formatRenda(result.renda)}
-                    disabled
-                     className="bg-muted text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
-
-                {!isCpfFoto && result.titulo_eleitor ? (
-                <div>
-                  <Label className="text-xs sm:text-sm" htmlFor="titulo_eleitor_basicos">Título de Eleitor</Label>
-                  <Input
-                    id="titulo_eleitor_basicos"
-                    value={result.titulo_eleitor || ''}
-                    disabled
-                     className="bg-muted uppercase text-[14px] md:text-sm"
-                  />
-                </div>
-                ) : null}
+              {/* Emails */}
+              <div id="emails-section">
+                <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} />
               </div>
-            </CardContent>
-          </Card>
 
-           {/* Telefones */}
-           <div id="telefones-section">
-              <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} />
-           </div>
-
-           {/* Emails */}
-           <div id="emails-section">
-              <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} />
-           </div>
-
-           {/* Endereços */}
-           <div id="enderecos-section">
-              <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
-           </div>
+              {/* Endereços */}
+              <div id="enderecos-section">
+                <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
+              </div>
+            </>
+          ) : null}
 
           {!isCpfFoto ? (
             <>
