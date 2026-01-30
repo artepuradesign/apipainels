@@ -861,6 +861,16 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
     }
   }, [user, reloadApiBalance]);
 
+  // Recarrega "Últimas Consultas" quando o título do módulo é carregado via API.
+  // Sem isso, consultas antigas (sem metadata.module_title) podem cair no fallback
+  // e exibir um nome incorreto na coluna "Módulo" (ex.: /consultar-cpf-parentes).
+  useEffect(() => {
+    const mt = (moduleTitle ?? '').toString().trim();
+    if (!user || !mt) return;
+    loadRecentConsultations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, moduleTitle]);
+
   // Verificar se veio do histórico com dados de consulta
   useEffect(() => {
     if (location.state?.fromHistory && location.state?.consultationData) {
