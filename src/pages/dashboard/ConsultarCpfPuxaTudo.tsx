@@ -597,6 +597,10 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
   const source = sourceProp ?? 'consultar-cpf-puxa-tudo';
   const fallbackModulePath = fallbackPricePath ?? '/dashboard/consultar-cpf-puxa-tudo';
 
+  // Modos “enxutos” por rota/módulo
+  const isParentesMode =
+    moduleId === 132 || (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/consultar-cpf-parentes'));
+
   const navigate = useNavigate();
   const location = useLocation();
   const [cpf, setCpf] = useState('');
@@ -775,11 +779,17 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
       const response = await consultationApiService.getConsultationHistory(50, 0);
       
       if (response.success && response.data && Array.isArray(response.data)) {
-        const getModuleLabel = (route?: string) => {
+        const getModuleLabel = (route?: string, metaTitle?: unknown) => {
+          const meta = (metaTitle ?? '').toString().trim();
+          if (meta) return meta;
+          const mt = (moduleTitle ?? '').toString().trim();
+          if (mt) return mt;
+
           const r = (route || '').toString();
           if (!r) return '-';
           if (r.includes('/dashboard/consultar-cpf-simples')) return 'CPF SIMPLES';
           if (r.includes('/dashboard/consultar-cpf-puxa-tudo')) return 'CPF PUXA TUDO';
+          if (r.includes('/dashboard/consultar-cpf-parentes')) return 'Parentes';
           return r;
         };
 
@@ -789,7 +799,10 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
           .map((consultation: any) => ({
             id: `consultation-${consultation.id}`,
             type: 'consultation',
-            module_type: getModuleLabel(consultation?.metadata?.page_route),
+            module_type: getModuleLabel(
+              consultation?.metadata?.page_route,
+              consultation?.metadata?.module_title ?? consultation?.metadata?.moduleTypeTitle
+            ),
             document: consultation.document,
             cost: consultation.cost,
             amount: -Math.abs(consultation.cost),
@@ -2318,7 +2331,7 @@ Todos os direitos reservados.`;
               {(() => {
                 // Exibir somente as sessões marcadas como "Online" (atalhos do topo),
                 // mantendo a mesma ordem em que as seções aparecem na página.
-                 const onlineBadges = [
+                 const onlineBadgesBase = [
                     { href: '#fotos-section', label: 'Fotos' },
                     { href: '#score-section', label: 'Score' },
                     { href: '#csb8-section', label: 'CSB8' },
@@ -2348,7 +2361,14 @@ Todos os direitos reservados.`;
                   { href: '#senhas-email-section', label: 'Senhas de Email' },
                   { href: '#senhas-cpf-section', label: 'Senhas de CPF' },
                   { href: '#gestao-cadastral-section', label: 'Gestão Cadastral' },
-                ] as const;
+                 ] as const;
+
+                 const onlineBadges = isParentesMode
+                   ? ([
+                       { href: '#dados-basicos-section', label: 'Dados Básicos' },
+                       { href: '#parentes-section', label: 'Parentes' },
+                     ] as const)
+                   : onlineBadgesBase;
 
                  const badgeCounts: Record<string, number> = {
                    '#fotos-section': fotosCount,
@@ -2421,14 +2441,16 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
-          {/* Fotos - Usando FotosSection para consistência */}
-          <div id="fotos-section">
-            <FotosSection cpfId={result.id} cpfNumber={result.cpf} onCountChange={setFotosCount} />
-          </div>
+          {!isParentesMode && (
+            <>
+              {/* Fotos - Usando FotosSection para consistência */}
+              <div id="fotos-section">
+                <FotosSection cpfId={result.id} cpfNumber={result.cpf} onCountChange={setFotosCount} />
+              </div>
 
-           {/* Score + CSB8 + CSBA (responsivo e compacto) */}
-           <section className="mx-auto w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-             <Card id="score-section" className={onlineCardClass(hasValue(result.score))}>
+              {/* Score + CSB8 + CSBA (responsivo e compacto) */}
+              <section className="mx-auto w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                <Card id="score-section" className={onlineCardClass(hasValue(result.score))}>
                   <CardContent className="p-2 space-y-1">
                     <ScoreGaugeCard
                       title="SCORE"
@@ -2476,9 +2498,9 @@ Todos os direitos reservados.`;
                     <p className="text-xs text-muted-foreground">{scoreData.description}</p>
                   )}
                </CardContent>
-             </Card>
+                </Card>
 
-             <Card id="csb8-section" className={onlineCardClass(hasValue(result.csb8) || hasValue(result.csb8_faixa))}>
+                <Card id="csb8-section" className={onlineCardClass(hasValue(result.csb8) || hasValue(result.csb8_faixa))}>
                   <CardContent className="p-2">
                     <ScoreGaugeCard
                       title="CSB8 [SCORE]"
@@ -2523,9 +2545,9 @@ Todos os direitos reservados.`;
                       }
                     />
                </CardContent>
-             </Card>
+                </Card>
 
-             <Card id="csba-section" className={onlineCardClass(hasValue(result.csba) || hasValue(result.csba_faixa))}>
+                <Card id="csba-section" className={onlineCardClass(hasValue(result.csba) || hasValue(result.csba_faixa))}>
                   <CardContent className="p-2">
                     <ScoreGaugeCard
                       title="CSBA [SCORE]"
@@ -2570,11 +2592,11 @@ Todos os direitos reservados.`;
                       }
                     />
                </CardContent>
-             </Card>
-           </section>
+                </Card>
+              </section>
 
-          {/* Dados Financeiros */}
-          <Card id="dados-financeiros-section" className={onlineCardClass(hasDadosFinanceiros)}>
+              {/* Dados Financeiros */}
+              <Card id="dados-financeiros-section" className={onlineCardClass(hasDadosFinanceiros)}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
@@ -2650,7 +2672,9 @@ Todos os direitos reservados.`;
                 </div>
               </div>
             </CardContent>
-          </Card>
+              </Card>
+            </>
+          )}
 
           {/* Dados Básicos */}
           <Card id="dados-basicos-section" className={onlineCardClass(hasDadosBasicos) ? `w-full ${onlineCardClass(hasDadosBasicos)}` : "w-full"}>
@@ -2879,23 +2903,25 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
-           {/* Telefones */}
-           <div id="telefones-section">
-              <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} />
-           </div>
+          {!isParentesMode && (
+            <>
+              {/* Telefones */}
+              <div id="telefones-section">
+                <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} />
+              </div>
 
-           {/* Emails */}
-           <div id="emails-section">
-              <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} />
-           </div>
+              {/* Emails */}
+              <div id="emails-section">
+                <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} />
+              </div>
 
-           {/* Endereços */}
-           <div id="enderecos-section">
-              <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
-           </div>
+              {/* Endereços */}
+              <div id="enderecos-section">
+                <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
+              </div>
 
-          {/* Título de Eleitor */}
-          <Card id="titulo-eleitor-section" className={onlineCardClass(hasTituloEleitor)}>
+              {/* Título de Eleitor */}
+              <Card id="titulo-eleitor-section" className={onlineCardClass(hasTituloEleitor)}>
             <CardHeader className="p-4 md:p-6">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl truncate">
@@ -2968,106 +2994,108 @@ Todos os direitos reservados.`;
                 </div>
               </div>
             </CardContent>
-          </Card>
+              </Card>
+            </>
+          )}
 
           {/* Parentes */}
           <div id="parentes-section">
             <ParentesSection cpfId={result.id} onCountChange={setParentesCount} />
           </div>
 
-          {/* Certidão de Nascimento */}
-          <div id="certidao-nascimento-section">
-            <CertidaoNascimentoSection cpfId={result.id} onCountChange={setCertidaoNascimentoCount} />
-          </div>
+          {!isParentesMode && (
+            <>
+              {/* Certidão de Nascimento */}
+              <div id="certidao-nascimento-section">
+                <CertidaoNascimentoSection cpfId={result.id} onCountChange={setCertidaoNascimentoCount} />
+              </div>
 
-          {/* Documento */}
-          <div id="documento-section">
-            <DocumentoSection cpfId={result.id} onCountChange={setDocumentoCount} />
-          </div>
+              {/* Documento */}
+              <div id="documento-section">
+                <DocumentoSection cpfId={result.id} onCountChange={setDocumentoCount} />
+              </div>
 
-          {/* CNS */}
-          <div id="cns-section">
-            <CnsSection cpfId={result.id} onCountChange={setCnsCount} />
-          </div>
+              {/* CNS */}
+              <div id="cns-section">
+                <CnsSection cpfId={result.id} onCountChange={setCnsCount} />
+              </div>
 
-          {/* PIS */}
-          <div id="pis-section">
-            <PisSection pis={result.pis} />
-          </div>
+              {/* PIS */}
+              <div id="pis-section">
+                <PisSection pis={result.pis} />
+              </div>
 
+              {/* Covid */}
+              <div id="vacinas-section">
+                <VacinaDisplay cpfId={result.id} onCountChange={setVacinasCount} />
+              </div>
 
+              {/* Empresas Associadas (SÓCIO) */}
+              <div id="empresas-socio-section">
+                <EmpresasSocioSection cpfId={result.id} onCountChange={setEmpresasSocioCount} />
+              </div>
 
-          {/* Covid */}
-          <div id="vacinas-section">
-            <VacinaDisplay cpfId={result.id} onCountChange={setVacinasCount} />
-          </div>
+              {/* CNPJ MEI */}
+              <div id="cnpj-mei-section">
+                <CnpjMeiSection cpfId={result.id} onCountChange={setCnpjMeiCount} />
+              </div>
 
-          {/* Empresas Associadas (SÓCIO) */}
-          <div id="empresas-socio-section">
-            <EmpresasSocioSection cpfId={result.id} onCountChange={setEmpresasSocioCount} />
-          </div>
+              {/* Dívidas Ativas (SIDA) */}
+              <div id="dividas-ativas-section">
+                <DividasAtivasSection cpf={result.id.toString()} onCountChange={setDividasAtivasCount} />
+              </div>
 
-          {/* CNPJ MEI */}
-          <div id="cnpj-mei-section">
-            <CnpjMeiSection cpfId={result.id} onCountChange={setCnpjMeiCount} />
-          </div>
+              {/* Auxílio Emergencial */}
+              <div id="auxilio-emergencial-section">
+                <AuxilioEmergencialSection auxilios={auxiliosEmergenciais} />
+              </div>
 
-          {/* Dívidas Ativas (SIDA) */}
-          <div id="dividas-ativas-section">
-            <DividasAtivasSection cpf={result.id.toString()} onCountChange={setDividasAtivasCount} />
-          </div>
+              {/* Rais - Histórico de Emprego */}
+              <div id="rais-section">
+                <RaisSection data={rais} isLoading={raisLoading} />
+              </div>
 
-          {/* Auxílio Emergencial */}
-          <div id="auxilio-emergencial-section">
-            <AuxilioEmergencialSection auxilios={auxiliosEmergenciais} />
-          </div>
+              {/* INSS */}
+              <div id="inss-section">
+                <InssSection cpfId={result.id} onCountChange={setInssCount} />
+              </div>
 
-          {/* Rais - Histórico de Emprego */}
-          <div id="rais-section">
-            <RaisSection data={rais} isLoading={raisLoading} />
-          </div>
+              {/* Operadora Claro */}
+              <div id="claro-section">
+                <ClaroSection cpfId={result.id} onCountChange={setClaroCount} />
+              </div>
 
-          {/* INSS */}
-          <div id="inss-section">
-            <InssSection cpfId={result.id} onCountChange={setInssCount} />
-          </div>
+              {/* Operadora Vivo */}
+              <div id="vivo-section">
+                <VivoSection cpfId={result.id} onCountChange={setVivoCount} />
+              </div>
 
-          {/* Operadora Claro */}
-          <div id="claro-section">
-            <ClaroSection cpfId={result.id} onCountChange={setClaroCount} />
-          </div>
+              {/* Operadora Tim */}
+              <div id="tim-section">
+                <OperadoraTimSection cpfId={result.id} onCountChange={setTimCount} />
+              </div>
 
-          {/* Operadora Vivo */}
-          <div id="vivo-section">
-            <VivoSection cpfId={result.id} onCountChange={setVivoCount} />
-          </div>
+              {/* Operadora OI */}
+              <div id="oi-section">
+                <OperadoraOiSection cpfId={result.id} onCountChange={setOiCount} />
+              </div>
 
-          {/* Operadora Tim */}
-          <div id="tim-section">
-            <OperadoraTimSection cpfId={result.id} onCountChange={setTimCount} />
-          </div>
+              {/* Senhas de Email */}
+              <div id="senhas-email-section">
+                <SenhaEmailSection cpfId={result.id} onCountChange={setSenhaEmailCount} />
+              </div>
 
-          {/* Operadora OI */}
-          <div id="oi-section">
-            <OperadoraOiSection cpfId={result.id} onCountChange={setOiCount} />
-          </div>
+              {/* Senhas do CPF */}
+              <div id="senhas-cpf-section">
+                <SenhaCpfSection cpfId={result.id} onCountChange={setSenhaCpfCount} />
+              </div>
 
-          {/* Senhas de Email */}
-          <div id="senhas-email-section">
-            <SenhaEmailSection cpfId={result.id} onCountChange={setSenhaEmailCount} />
-          </div>
-
-          {/* Senhas do CPF */}
-          <div id="senhas-cpf-section">
-            <SenhaCpfSection cpfId={result.id} onCountChange={setSenhaCpfCount} />
-          </div>
-
-          {/* (Removido) Documento/RG, CNH e NIS conforme solicitado */}
-
-          {/* Gestão Cadastral */}
-          <div id="gestao-cadastral-section">
-            <GestaoSection cpfId={result.id} onCountChange={setGestaoCount} />
-          </div>
+              {/* Gestão Cadastral */}
+              <div id="gestao-cadastral-section">
+                <GestaoSection cpfId={result.id} onCountChange={setGestaoCount} />
+              </div>
+            </>
+          )}
 
 
         </div>
