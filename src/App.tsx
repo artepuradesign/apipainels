@@ -42,6 +42,7 @@ import Carteira from '@/pages/dashboard/Carteira';
 import ConsultarCpfPuxaTudo from '@/pages/dashboard/ConsultarCpfPuxaTudo';
 import ConsultarCpfSimples from '@/pages/dashboard/ConsultarCpfSimples';
 import ConsultarCpfBasico from '@/pages/dashboard/ConsultarCpfBasico';
+import ConsultarCpfCompleto from '@/pages/dashboard/ConsultarCpfCompleto';
 import ConsultarCNPJ from '@/pages/dashboard/ConsultarCNPJ';
 import ConsultarVeiculo from '@/pages/dashboard/ConsultarVeiculo';
 import BuscaNome from '@/pages/dashboard/BuscaNome';
@@ -171,6 +172,7 @@ function App() {
                     <Route path="/dashboard/consultar-cpf-puxa-tudo" element={<DashboardLayout><ConsultarCpfPuxaTudo /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-cpf-simples" element={<DashboardLayout><ConsultarCpfSimples /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-cpf-basico" element={<DashboardLayout><ConsultarCpfBasico /></DashboardLayout>} />
+                    <Route path="/dashboard/consultar-cpf-completo" element={<DashboardLayout><ConsultarCpfCompleto /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-cnpj" element={<DashboardLayout><ConsultarCNPJ /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-veiculo" element={<DashboardLayout><ConsultarVeiculo /></DashboardLayout>} />
                     <Route path="/dashboard/busca-nome" element={<DashboardLayout><BuscaNome /></DashboardLayout>} />
