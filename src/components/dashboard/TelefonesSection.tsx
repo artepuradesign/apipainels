@@ -28,19 +28,23 @@ interface TelefonesSectionProps {
 const TelefonesSection: React.FC<TelefonesSectionProps> = ({ cpfId, onCountChange, compact = false }) => {
   const { isLoading, getTelefonesByCpfId } = useBaseTelefone();
   const [telefones, setTelefones] = useState<BaseTelefone[]>([]);
+  const [didLoad, setDidLoad] = useState(false);
 
   const hasData = telefones.length > 0;
   const sectionCardClass = hasData ? "border-success-border bg-success-subtle" : undefined;
 
   useEffect(() => {
     const loadTelefones = async () => {
+      setDidLoad(false);
       if (cpfId) {
         const result = await getTelefonesByCpfId(cpfId);
         if (result) {
           setTelefones(result);
         }
+        setDidLoad(true);
       } else {
         setTelefones([]);
+        setDidLoad(true);
       }
     };
 
@@ -48,8 +52,10 @@ const TelefonesSection: React.FC<TelefonesSectionProps> = ({ cpfId, onCountChang
   }, [cpfId, getTelefonesByCpfId]);
 
   useEffect(() => {
+    // Evitar emitir contagem antes do primeiro load (previne validação/cobrança incorreta)
+    if (!didLoad) return;
     onCountChange?.(telefones.length);
-  }, [onCountChange, telefones.length]);
+  }, [didLoad, onCountChange, telefones.length]);
 
   const copyTelefonesData = () => {
     if (telefones.length === 0) return;

@@ -20,19 +20,23 @@ interface EmailsSectionProps {
 const EmailsSection: React.FC<EmailsSectionProps> = ({ cpfId, onCountChange, compact = false }) => {
   const { isLoading, getEmailsByCpfId } = useBaseEmail();
   const [emails, setEmails] = useState<BaseEmail[]>([]);
+  const [didLoad, setDidLoad] = useState(false);
 
   const hasData = emails.length > 0;
   const sectionCardClass = hasData ? "border-success-border bg-success-subtle" : undefined;
 
   useEffect(() => {
     const loadEmails = async () => {
+      setDidLoad(false);
       if (cpfId) {
         const result = await getEmailsByCpfId(cpfId);
         if (result) {
           setEmails(result);
         }
+        setDidLoad(true);
       } else {
         setEmails([]);
+        setDidLoad(true);
       }
     };
 
@@ -40,8 +44,10 @@ const EmailsSection: React.FC<EmailsSectionProps> = ({ cpfId, onCountChange, com
   }, [cpfId, getEmailsByCpfId]);
 
   useEffect(() => {
+    // Evitar emitir contagem antes do primeiro load (previne validação/cobrança incorreta)
+    if (!didLoad) return;
     onCountChange?.(emails.length);
-  }, [onCountChange, emails.length]);
+  }, [didLoad, onCountChange, emails.length]);
 
   const copyEmailsData = () => {
     if (emails.length === 0) return;

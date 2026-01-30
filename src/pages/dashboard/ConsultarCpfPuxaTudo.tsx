@@ -86,7 +86,11 @@ const consultarCPFComRegistro = async (
   cost: number,
   metadata: any,
   moduleId: number,
-  source: string
+  source: string,
+  options?: {
+    /** Quando true, realiza a busca/retorno dos dados, mas NÃO registra/cobra no histórico. */
+    skipRegister?: boolean;
+  }
 ) => {
   console.log('🔍 [CPF_CONSULTA] INÍCIO - Consultando CPF:', cpf);
   console.log('💰 [CPF_CONSULTA] Custo da consulta (VALOR COM DESCONTO):', cost);
@@ -133,59 +137,60 @@ const consultarCPFComRegistro = async (
     if (searchResult.success && searchResult.data) {
       // CPF encontrado! Agora registrar a consulta via API externa
       console.log('✅ [CPF_CONSULTA] CPF encontrado:', searchResult.data.nome);
-      console.log('📤 [REGISTRO_CONSULTA] Iniciando registro da consulta...');
-      
-      try {
-        // Preparar payload para registro unificado - valor JÁ VEM COM DESCONTO APLICADO
-        const finalCost = parseFloat(cost.toString()); // cost = finalPrice (já com desconto)
-        
-        // Determinar tipo de saldo usado baseado nos saldos disponíveis
-        let saldoUsado: 'plano' | 'carteira' | 'misto' = 'carteira';
-        const planBalance = metadata.plan_balance || 0;
-        const walletBalance = metadata.wallet_balance || 0;
-        
-        if (planBalance >= finalCost) {
-          saldoUsado = 'plano';
-          console.log('💳 [REGISTRO_CONSULTA] Usando apenas saldo do plano');
-        } else if (planBalance > 0 && (planBalance + walletBalance) >= finalCost) {
-          saldoUsado = 'misto';
-          console.log('💳 [REGISTRO_CONSULTA] Usando saldo do plano + carteira');
-        } else {
-          saldoUsado = 'carteira';
-          console.log('💳 [REGISTRO_CONSULTA] Usando apenas saldo da carteira');
-        }
-        
-        console.log('💰 [REGISTRO_CONSULTA] Valores de cobrança:', {
-          cost_recebido: cost,
-          finalCost,
-          discount_metadata: metadata.discount,
-          original_price_metadata: metadata.original_price,
-          final_price_metadata: metadata.final_price,
-          planBalance,
-          walletBalance,
-          saldoUsado
-        });
-        
-        console.log('💳 [REGISTRO_CONSULTA] Saldo usado determinado:', saldoUsado);
-        
-        const registroPayload = {
-          user_id: parseInt(metadata.user_id.toString()),
-          module_type: 'cpf',
-          document: cpf,  // Backend PHP espera 'document', não 'documento'
-          cost: finalCost, // VALOR COM DESCONTO JÁ APLICADO (preço do módulo ID 83 com desconto)
-          status: 'completed',
-          result_data: searchResult.data,
-          ip_address: window.location.hostname,
-          user_agent: navigator.userAgent,
-          saldo_usado: saldoUsado, // Incluir o tipo de saldo usado
+      if (!options?.skipRegister) {
+        console.log('📤 [REGISTRO_CONSULTA] Iniciando registro da consulta...');
+
+        try {
+          // Preparar payload para registro unificado - valor JÁ VEM COM DESCONTO APLICADO
+          const finalCost = parseFloat(cost.toString()); // cost = finalPrice (já com desconto)
+
+          // Determinar tipo de saldo usado baseado nos saldos disponíveis
+          let saldoUsado: 'plano' | 'carteira' | 'misto' = 'carteira';
+          const planBalance = metadata.plan_balance || 0;
+          const walletBalance = metadata.wallet_balance || 0;
+
+          if (planBalance >= finalCost) {
+            saldoUsado = 'plano';
+            console.log('💳 [REGISTRO_CONSULTA] Usando apenas saldo do plano');
+          } else if (planBalance > 0 && (planBalance + walletBalance) >= finalCost) {
+            saldoUsado = 'misto';
+            console.log('💳 [REGISTRO_CONSULTA] Usando saldo do plano + carteira');
+          } else {
+            saldoUsado = 'carteira';
+            console.log('💳 [REGISTRO_CONSULTA] Usando apenas saldo da carteira');
+          }
+
+          console.log('💰 [REGISTRO_CONSULTA] Valores de cobrança:', {
+            cost_recebido: cost,
+            finalCost,
+            discount_metadata: metadata.discount,
+            original_price_metadata: metadata.original_price,
+            final_price_metadata: metadata.final_price,
+            planBalance,
+            walletBalance,
+            saldoUsado
+          });
+
+          console.log('💳 [REGISTRO_CONSULTA] Saldo usado determinado:', saldoUsado);
+
+          const registroPayload = {
+            user_id: parseInt(metadata.user_id.toString()),
+            module_type: 'cpf',
+            document: cpf,  // Backend PHP espera 'document', não 'documento'
+            cost: finalCost, // VALOR COM DESCONTO JÁ APLICADO
+            status: 'completed',
+            result_data: searchResult.data,
+            ip_address: window.location.hostname,
+            user_agent: navigator.userAgent,
+            saldo_usado: saldoUsado, // Incluir o tipo de saldo usado
             metadata: {
               source,
               page_route: window.location.pathname,
               // Exibição no histórico (não altera o module_type exigido pelo backend)
               module_title: (metadata?.module_title ?? metadata?.moduleTypeTitle ?? '').toString().trim() || undefined,
               discount: metadata.discount || 0,
-              original_price: metadata.original_price || finalCost, // preço original sem desconto do módulo ID 83
-              discounted_price: finalCost, // preço final com desconto aplicado (mesmo que cost)
+              original_price: metadata.original_price || finalCost,
+              discounted_price: finalCost,
               final_price: metadata.final_price || finalCost,
               subscription_discount: metadata.subscription_discount || false,
               plan_type: metadata.plan_type || 'Pré-Pago',
@@ -193,64 +198,62 @@ const consultarCPFComRegistro = async (
               timestamp: new Date().toISOString(),
               saldo_usado: saldoUsado
             }
-        };
-        
-        console.log('📤 [REGISTRO_CONSULTA] Payload preparado:', {
-          user_id: registroPayload.user_id,
-          document: registroPayload.document,
-          cost: registroPayload.cost,
-          status: registroPayload.status,
-          hasResultData: !!registroPayload.result_data,
-          hasMetadata: !!registroPayload.metadata
-        });
-        
-        // Chamada para o serviço unificado
-        console.log('🌐 [REGISTRO_CONSULTA] Enviando para consultasCpfService.create...');
-        
-        try {
-          const registroResult = await consultasCpfService.create(registroPayload as any);
-          
-          console.log('📊 [REGISTRO_CONSULTA] Resposta do serviço:', {
-            success: registroResult.success,
-            hasData: !!registroResult.data,
-            error: registroResult.error,
-            message: registroResult.message
+          };
+
+          console.log('📤 [REGISTRO_CONSULTA] Payload preparado:', {
+            user_id: registroPayload.user_id,
+            document: registroPayload.document,
+            cost: registroPayload.cost,
+            status: registroPayload.status,
+            hasResultData: !!registroPayload.result_data,
+            hasMetadata: !!registroPayload.metadata
           });
-          
-          if (registroResult.success) {
-            console.log('✅ [REGISTRO_CONSULTA] Consulta registrada com sucesso!');
-          } else {
-            console.error('❌ [REGISTRO_CONSULTA] Falha ao registrar:', registroResult.error);
-            // Não bloquear a consulta, apenas logar o erro
-            console.warn('⚠️ [REGISTRO_CONSULTA] Continuando com a consulta apesar do erro no registro');
+
+          // Chamada para o serviço unificado
+          console.log('🌐 [REGISTRO_CONSULTA] Enviando para consultasCpfService.create...');
+
+          try {
+            const registroResult = await consultasCpfService.create(registroPayload as any);
+
+            console.log('📊 [REGISTRO_CONSULTA] Resposta do serviço:', {
+              success: registroResult.success,
+              hasData: !!registroResult.data,
+              error: registroResult.error,
+              message: registroResult.message
+            });
+
+            if (registroResult.success) {
+              console.log('✅ [REGISTRO_CONSULTA] Consulta registrada com sucesso!');
+            } else {
+              console.error('❌ [REGISTRO_CONSULTA] Falha ao registrar:', registroResult.error);
+              console.warn('⚠️ [REGISTRO_CONSULTA] Continuando com a consulta apesar do erro no registro');
+            }
+          } catch (registroError: any) {
+            console.error('❌ [REGISTRO_CONSULTA] Exceção no registro:', registroError);
+
+            // Tentar extrair mais detalhes do erro
+            let errorDetails = 'Erro desconhecido';
+            if (registroError instanceof Error) {
+              errorDetails = registroError.message;
+            } else if (typeof registroError === 'string') {
+              errorDetails = registroError;
+            } else if (registroError?.error) {
+              errorDetails = registroError.error;
+            }
+
+            console.error('❌ [REGISTRO_CONSULTA] Detalhes do erro:', {
+              message: errorDetails,
+              type: typeof registroError,
+              keys: Object.keys(registroError || {})
+            });
+
+            console.warn('⚠️ [REGISTRO_CONSULTA] Histórico não salvo, mas consulta foi realizada com sucesso');
           }
-        } catch (registroError: any) {
-          console.error('❌ [REGISTRO_CONSULTA] Exceção no registro:', registroError);
-          
-          // Tentar extrair mais detalhes do erro
-          let errorDetails = 'Erro desconhecido';
-          if (registroError instanceof Error) {
-            errorDetails = registroError.message;
-          } else if (typeof registroError === 'string') {
-            errorDetails = registroError;
-          } else if (registroError?.error) {
-            errorDetails = registroError.error;
-          }
-          
-          console.error('❌ [REGISTRO_CONSULTA] Detalhes do erro:', {
-            message: errorDetails,
-            type: typeof registroError,
-            keys: Object.keys(registroError || {})
-          });
-          
-              // Log do erro mas não mostrar ao usuário - não atrapalhar experiência
-              console.warn('⚠️ [REGISTRO_CONSULTA] Histórico não salvo, mas consulta foi realizada com sucesso');
-          
-          // Continua mesmo se der erro no registro, pois o CPF foi encontrado
+        } catch (outerError) {
+          console.error('❌ [REGISTRO_CONSULTA] Erro crítico:', outerError);
         }
-      } catch (outerError) {
-        console.error('❌ [REGISTRO_CONSULTA] Erro crítico:', outerError);
-        // Não mostrar erro ao usuário, apenas logar
+      } else {
+        console.log('⏭️ [REGISTRO_CONSULTA] skipRegister=true — não registrar/cobrar neste momento');
       }
 
       // Retornar dados do CPF encontrado junto com dados da Receita Federal
@@ -302,46 +305,50 @@ const consultarCPFComRegistro = async (
       if (preCheck.success && preCheck.exists && preCheck.data) {
         console.log('✅ [PRE_CHECK] CPF encontrado no banco antes do envio!');
         
-        // Registrar consulta
-        const finalCost = parseFloat(cost.toString());
-        let saldoUsado: 'plano' | 'carteira' | 'misto' = 'carteira';
-        const planBalance = metadata.plan_balance || 0;
-        const walletBalance = metadata.wallet_balance || 0;
-        
-        if (planBalance >= finalCost) {
-          saldoUsado = 'plano';
-        } else if (planBalance > 0 && (planBalance + walletBalance) >= finalCost) {
-          saldoUsado = 'misto';
-        } else {
-          saldoUsado = 'carteira';
-        }
-        
-        const registroPayload = {
-          user_id: parseInt(metadata.user_id.toString()),
-          module_type: 'cpf',
-          document: cpf,
-          cost: finalCost,
-          status: 'completed',
-          result_data: preCheck.data,
-          ip_address: window.location.hostname,
-          user_agent: navigator.userAgent,
-          saldo_usado: saldoUsado,
-          metadata: {
-            source: `${source}-precheck`,
-            page_route: window.location.pathname,
-            discount: metadata.discount || 0,
-            original_price: metadata.original_price || finalCost,
-            discounted_price: finalCost,
-            final_price: metadata.final_price || finalCost,
-            subscription_discount: metadata.subscription_discount || false,
-            plan_type: metadata.plan_type || 'Pré-Pago',
-            module_id: moduleId,
-            timestamp: new Date().toISOString(),
-            saldo_usado: saldoUsado
+        if (!options?.skipRegister) {
+          // Registrar consulta
+          const finalCost = parseFloat(cost.toString());
+          let saldoUsado: 'plano' | 'carteira' | 'misto' = 'carteira';
+          const planBalance = metadata.plan_balance || 0;
+          const walletBalance = metadata.wallet_balance || 0;
+
+          if (planBalance >= finalCost) {
+            saldoUsado = 'plano';
+          } else if (planBalance > 0 && (planBalance + walletBalance) >= finalCost) {
+            saldoUsado = 'misto';
+          } else {
+            saldoUsado = 'carteira';
           }
-        };
-        
-        await consultasCpfService.create(registroPayload as any);
+
+          const registroPayload = {
+            user_id: parseInt(metadata.user_id.toString()),
+            module_type: 'cpf',
+            document: cpf,
+            cost: finalCost,
+            status: 'completed',
+            result_data: preCheck.data,
+            ip_address: window.location.hostname,
+            user_agent: navigator.userAgent,
+            saldo_usado: saldoUsado,
+            metadata: {
+              source: `${source}-precheck`,
+              page_route: window.location.pathname,
+              discount: metadata.discount || 0,
+              original_price: metadata.original_price || finalCost,
+              discounted_price: finalCost,
+              final_price: metadata.final_price || finalCost,
+              subscription_discount: metadata.subscription_discount || false,
+              plan_type: metadata.plan_type || 'Pré-Pago',
+              module_id: moduleId,
+              timestamp: new Date().toISOString(),
+              saldo_usado: saldoUsado
+            }
+          };
+
+          await consultasCpfService.create(registroPayload as any);
+        } else {
+          console.log('⏭️ [PRE_CHECK] skipRegister=true — não registrar/cobrar neste momento');
+        }
         
         // Buscar dados da Receita Federal também
         const receitaResult = await baseReceitaService.getByCpf(cpf);
@@ -636,7 +643,17 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
 
   // Nessas telas enxutas, não exibimos os badges de atalho no topo.
   const hideShortcutBadges =
-    isRestrictToBasicAndTelefones || isRestrictToBasicAndEmails || isRestrictToBasicAndEnderecos;
+    isRestrictToBasicAndParentes ||
+    isRestrictToBasicAndTelefones ||
+    isRestrictToBasicAndEmails ||
+    isRestrictToBasicAndEnderecos;
+
+  // Nestes módulos, a consulta só deve ser cobrada se a seção principal vier com dados.
+  const isConditionalChargeMode =
+    isRestrictToBasicAndParentes ||
+    isRestrictToBasicAndTelefones ||
+    isRestrictToBasicAndEmails ||
+    isRestrictToBasicAndEnderecos;
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -689,6 +706,15 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
   const [consultationDialogOpen, setConsultationDialogOpen] = useState(false);
   const [showInsufficientBalanceDialog, setShowInsufficientBalanceDialog] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(60);
+
+  const [conditionalChargePending, setConditionalChargePending] = useState<null | {
+    cpf: string;
+    finalPrice: number;
+    metadata: any;
+    moduleId: number;
+    source: string;
+  }>(null);
+  const conditionalChargeInFlightRef = useRef(false);
 
   // Helper function to format income as Brazilian currency
   const formatRenda = (renda: string | number | null | undefined): string => {
@@ -1307,6 +1333,101 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
     performSearch();
   };
 
+  const getConditionalRequiredCount = () => {
+    if (isRestrictToBasicAndParentes) return parentesCount;
+    if (isRestrictToBasicAndTelefones) return telefonesCount;
+    if (isRestrictToBasicAndEmails) return emailsCount;
+    if (isRestrictToBasicAndEnderecos) return enderecosCount;
+    return null;
+  };
+
+  useEffect(() => {
+    if (!isConditionalChargeMode) return;
+    if (!conditionalChargePending) return;
+    if (!result) return;
+
+    const requiredCount = getConditionalRequiredCount();
+    if (requiredCount === null) return;
+
+    // aguardando primeira carga das seções
+    if (requiredCount < 0) return;
+    if (conditionalChargeInFlightRef.current) return;
+
+    if (requiredCount === 0) {
+      toast.info('Consulta não cobrada', {
+        description: 'Nenhum registro encontrado na seção principal.'
+      });
+      setConditionalChargePending(null);
+      return;
+    }
+
+    // requiredCount > 0 => cobrar agora
+    conditionalChargeInFlightRef.current = true;
+    (async () => {
+      try {
+        await consultarCPFComRegistro(
+          conditionalChargePending.cpf,
+          conditionalChargePending.finalPrice,
+          conditionalChargePending.metadata,
+          conditionalChargePending.moduleId,
+          conditionalChargePending.source
+        );
+
+        toast.success(`✅ Consulta cobrada: R$ ${conditionalChargePending.finalPrice.toFixed(2)}`, {
+          duration: 3000,
+        });
+
+        await reloadApiBalance();
+        loadBalances();
+
+        const finalPrice = conditionalChargePending.finalPrice;
+        const saldoUsado = planBalance >= finalPrice ? 'plano' :
+          (planBalance > 0 && (planBalance + walletBalance) >= finalPrice) ? 'misto' : 'carteira';
+
+        if (saldoUsado === 'plano') {
+          const newPlanBalance = Math.max(0, planBalance - finalPrice);
+          setPlanBalance(newPlanBalance);
+          localStorage.setItem(`plan_balance_${user?.id}`, newPlanBalance.toFixed(2));
+        } else if (saldoUsado === 'misto') {
+          const remainingCost = Math.max(0, finalPrice - planBalance);
+          const newWalletBalance = Math.max(0, walletBalance - remainingCost);
+          setPlanBalance(0);
+          setWalletBalance(newWalletBalance);
+          localStorage.setItem(`plan_balance_${user?.id}`, '0.00');
+          localStorage.setItem(`wallet_balance_${user?.id}`, newWalletBalance.toFixed(2));
+        } else {
+          const newWalletBalance = Math.max(0, walletBalance - finalPrice);
+          setWalletBalance(newWalletBalance);
+          localStorage.setItem(`wallet_balance_${user?.id}`, newWalletBalance.toFixed(2));
+        }
+
+        window.dispatchEvent(new CustomEvent('balanceUpdated', {
+          detail: { shouldAnimate: true, immediate: true }
+        }));
+
+        setTimeout(() => {
+          loadConsultationHistory();
+          loadRecentConsultations();
+        }, 1000);
+      } finally {
+        conditionalChargeInFlightRef.current = false;
+        setConditionalChargePending(null);
+      }
+    })();
+  }, [
+    isConditionalChargeMode,
+    conditionalChargePending,
+    result,
+    parentesCount,
+    telefonesCount,
+    emailsCount,
+    enderecosCount,
+    planBalance,
+    walletBalance,
+    reloadApiBalance,
+    user?.id,
+  ]);
+
   const performSearch = async () => {
     console.log('🚀 [PERFORM_SEARCH] Iniciando consulta no banco de dados');
 
@@ -1531,7 +1652,9 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
         session_token: sessionToken,
         plan_balance: planBalance,
         wallet_balance: walletBalance
-      }, moduleId, source);
+      }, moduleId, source, {
+        skipRegister: isConditionalChargeMode,
+      });
       
       console.log('📊 [HANDLE_SEARCH] Resultado da consulta:', {
         success: baseCpfResult.success,
@@ -1687,23 +1810,64 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
         
         // Exibir notificação de sucesso COM feedback detalhado
         console.log('✅ [HANDLE_SEARCH] Exibindo toast de sucesso');
-        toast.success(`✅ CPF encontrado! Valor cobrado: R$ ${finalPrice.toFixed(2)}`, {
-          description: `Dados de ${cpfData.nome} carregados com sucesso`,
-          duration: 4000
-        });
+        if (isConditionalChargeMode) {
+          // Importante: não afirmar cobrança aqui (vai depender da seção principal)
+          toast.success('✅ CPF encontrado! Carregando resultados...', {
+            description: `Dados de ${cpfData.nome} carregados com sucesso`,
+            duration: 3000,
+          });
+        } else {
+          toast.success(`✅ CPF encontrado! Valor cobrado: R$ ${finalPrice.toFixed(2)}`, {
+            description: `Dados de ${cpfData.nome} carregados com sucesso`,
+            duration: 4000
+          });
+        }
 
         // Auto scroll to result
         setTimeout(() => {
           resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 300);
         
-        console.log('🔄 [HANDLE_SEARCH] Recarregando saldo após consulta...');
-        // Recarregar saldo após cobrança
-        await reloadApiBalance();
-        loadBalances();
+        if (isConditionalChargeMode) {
+          // Preparar cobrança condicional (após a seção principal carregar)
+          if (isRestrictToBasicAndParentes) setParentesCount(-1);
+          if (isRestrictToBasicAndTelefones) setTelefonesCount(-1);
+          if (isRestrictToBasicAndEmails) setEmailsCount(-1);
+          if (isRestrictToBasicAndEnderecos) setEnderecosCount(-1);
+
+          setConditionalChargePending({
+            cpf,
+            finalPrice,
+            metadata: {
+              module_title: moduleTitle,
+              discount: discount,
+              original_price: originalPrice,
+              final_price: finalPrice,
+              subscription_discount: hasActiveSubscription,
+              plan_type: userPlan,
+              user_id: parseInt(user.id),
+              user_name: user.full_name || user.email || 'Arte Pura',
+              session_token: sessionToken,
+              plan_balance: planBalance,
+              wallet_balance: walletBalance
+            },
+            moduleId,
+            source,
+          });
+        } else {
+          console.log('🔄 [HANDLE_SEARCH] Recarregando saldo após consulta...');
+          // Recarregar saldo após cobrança
+          await reloadApiBalance();
+          loadBalances();
+        }
         
+        if (isConditionalChargeMode) {
+          // Não deduzir saldo aqui; será feito após validação da seção principal.
+          return;
+        }
+
         // Deduzir saldo localmente para garantir consistência
-        const saldoUsado = planBalance >= finalPrice ? 'plano' : 
+        const saldoUsado = planBalance >= finalPrice ? 'plano' :
                           (planBalance > 0 && (planBalance + walletBalance) >= finalPrice) ? 'misto' : 'carteira';
         
         console.log('💰 [HANDLE_SEARCH] Deduzindo saldo localmente:', {
