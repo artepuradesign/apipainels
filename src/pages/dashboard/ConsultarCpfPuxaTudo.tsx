@@ -601,6 +601,13 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
   const isParentesMode =
     moduleId === 132 || (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/consultar-cpf-parentes'));
 
+  const isCertidaoMode =
+    moduleId === 134 || (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/consultar-cpf-certidao'));
+
+  const isRestrictToBasicAndParentes = isParentesMode;
+  const isRestrictToBasicAndCertidao = isCertidaoMode;
+  const isRestrictedMode = isRestrictToBasicAndParentes || isRestrictToBasicAndCertidao;
+
   const navigate = useNavigate();
   const location = useLocation();
   const [cpf, setCpf] = useState('');
@@ -2363,10 +2370,15 @@ Todos os direitos reservados.`;
                   { href: '#gestao-cadastral-section', label: 'Gestão Cadastral' },
                  ] as const;
 
-                 const onlineBadges = isParentesMode
+                 const onlineBadges = isRestrictToBasicAndParentes
                    ? ([
                        { href: '#dados-basicos-section', label: 'Dados Básicos' },
                        { href: '#parentes-section', label: 'Parentes' },
+                     ] as const)
+                   : isRestrictToBasicAndCertidao
+                   ? ([
+                       { href: '#dados-basicos-section', label: 'Dados Básicos' },
+                       { href: '#certidao-nascimento-section', label: 'Certidão de Nascimento' },
                      ] as const)
                    : onlineBadgesBase;
 
@@ -2441,7 +2453,7 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
-          {!isParentesMode && (
+          {!isRestrictedMode && (
             <>
               {/* Fotos - Usando FotosSection para consistência */}
               <div id="fotos-section">
@@ -2903,7 +2915,7 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
-          {!isParentesMode && (
+          {!isRestrictedMode && (
             <>
               {/* Telefones */}
               <div id="telefones-section">
@@ -2999,16 +3011,21 @@ Todos os direitos reservados.`;
           )}
 
           {/* Parentes */}
-          <div id="parentes-section">
-            <ParentesSection cpfId={result.id} onCountChange={setParentesCount} />
-          </div>
+          {!isRestrictToBasicAndCertidao && (
+            <div id="parentes-section">
+              <ParentesSection cpfId={result.id} onCountChange={setParentesCount} />
+            </div>
+          )}
 
-          {!isParentesMode && (
+          {/* Certidão de Nascimento */}
+          {(isRestrictToBasicAndCertidao || !isRestrictedMode) && (
+            <div id="certidao-nascimento-section">
+              <CertidaoNascimentoSection cpfId={result.id} onCountChange={setCertidaoNascimentoCount} />
+            </div>
+          )}
+
+          {!isRestrictedMode && (
             <>
-              {/* Certidão de Nascimento */}
-              <div id="certidao-nascimento-section">
-                <CertidaoNascimentoSection cpfId={result.id} onCountChange={setCertidaoNascimentoCount} />
-              </div>
 
               {/* Documento */}
               <div id="documento-section">
