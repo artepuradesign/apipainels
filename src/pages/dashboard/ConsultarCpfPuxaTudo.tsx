@@ -606,9 +606,33 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
   const isCertidaoMode =
     moduleId === 134 || (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/consultar-cpf-certidao'));
 
+  const isTelefonesMode =
+    moduleId === 141 || (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/consultar-cpf-telefones'));
+
+  const isEmailsMode =
+    moduleId === 142 || (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/consultar-cpf-emails'));
+
+  const isEnderecosMode =
+    moduleId === 143 || (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/consultar-cpf-enderecos'));
+
   const isRestrictToBasicAndParentes = isParentesMode;
   const isRestrictToBasicAndCertidao = isCertidaoMode;
-  const isRestrictedMode = isRestrictToBasicAndParentes || isRestrictToBasicAndCertidao;
+  const isRestrictToBasicAndTelefones = isTelefonesMode;
+  const isRestrictToBasicAndEmails = isEmailsMode;
+  const isRestrictToBasicAndEnderecos = isEnderecosMode;
+
+  const isRestrictedMode =
+    isRestrictToBasicAndParentes ||
+    isRestrictToBasicAndCertidao ||
+    isRestrictToBasicAndTelefones ||
+    isRestrictToBasicAndEmails ||
+    isRestrictToBasicAndEnderecos;
+
+  // Visibilidade das seções (Puxa Tudo = mostra tudo; modos enxutos = mostra apenas o essencial)
+  const showTelefonesSection = !isRestrictedMode || isRestrictToBasicAndTelefones;
+  const showEmailsSection = !isRestrictedMode || isRestrictToBasicAndEmails;
+  const showEnderecosSection = !isRestrictedMode || isRestrictToBasicAndEnderecos;
+  const showParentesSection = !isRestrictedMode || isRestrictToBasicAndParentes;
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -2928,23 +2952,26 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
+          {showTelefonesSection && (
+            <div id="telefones-section">
+              <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} />
+            </div>
+          )}
+
+          {showEmailsSection && (
+            <div id="emails-section">
+              <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} />
+            </div>
+          )}
+
+          {showEnderecosSection && (
+            <div id="enderecos-section">
+              <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
+            </div>
+          )}
+
           {!isRestrictedMode && (
             <>
-              {/* Telefones */}
-              <div id="telefones-section">
-                <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} />
-              </div>
-
-              {/* Emails */}
-              <div id="emails-section">
-                <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} />
-              </div>
-
-              {/* Endereços */}
-              <div id="enderecos-section">
-                <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
-              </div>
-
               {/* Título de Eleitor */}
               <Card id="titulo-eleitor-section" className={onlineCardClass(hasTituloEleitor)}>
             <CardHeader className="p-4 md:p-6">
@@ -3024,7 +3051,7 @@ Todos os direitos reservados.`;
           )}
 
           {/* Parentes */}
-          {!isRestrictToBasicAndCertidao && (
+          {!isRestrictToBasicAndCertidao && showParentesSection && (
             <div id="parentes-section">
               <ParentesSection cpfId={result.id} onCountChange={setParentesCount} />
             </div>
