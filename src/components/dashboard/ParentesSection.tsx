@@ -29,8 +29,10 @@ const ParentesSection: React.FC<ParentesSectionProps> = ({ cpfId, onCountChange 
   }, [cpfId]);
 
   useEffect(() => {
+    // Evitar emitir contagem antes do carregamento terminar (previne validação/cobrança incorreta)
+    if (loading) return;
     onCountChange?.(parentes.length);
-  }, [onCountChange, parentes.length]);
+  }, [loading, onCountChange, parentes.length]);
 
   const loadParentes = async () => {
     setLoading(true);

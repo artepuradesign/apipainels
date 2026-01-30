@@ -16,19 +16,23 @@ interface EnderecosSectionProps {
 const EnderecosSection: React.FC<EnderecosSectionProps> = ({ cpfId, onCountChange }) => {
   const { isLoading, getEnderecosByCpfId } = useBaseEndereco();
   const [enderecos, setEnderecos] = useState<BaseEndereco[]>([]);
+  const [didLoad, setDidLoad] = useState(false);
 
   const hasData = enderecos.length > 0;
   const sectionCardClass = hasData ? "border-success-border bg-success-subtle" : undefined;
 
   useEffect(() => {
     const loadEnderecos = async () => {
+      setDidLoad(false);
       if (cpfId) {
         const result = await getEnderecosByCpfId(cpfId);
         if (result) {
           setEnderecos(result);
         }
+        setDidLoad(true);
       } else {
         setEnderecos([]);
+        setDidLoad(true);
       }
     };
 
@@ -36,8 +40,10 @@ const EnderecosSection: React.FC<EnderecosSectionProps> = ({ cpfId, onCountChang
   }, [cpfId, getEnderecosByCpfId]);
 
   useEffect(() => {
+    // Evitar emitir contagem antes do primeiro load (previne validação/cobrança incorreta)
+    if (!didLoad) return;
     onCountChange?.(enderecos.length);
-  }, [onCountChange, enderecos.length]);
+  }, [didLoad, onCountChange, enderecos.length]);
 
   const copyEnderecosData = () => {
     if (enderecos.length === 0) return;
