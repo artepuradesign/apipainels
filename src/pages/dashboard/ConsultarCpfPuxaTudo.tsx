@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Progress } from '@/components/ui/progress';
 import { 
   User, Search, AlertCircle, CheckCircle, Download, Settings, Crown, FileText, 
-  Camera, Heart, DollarSign, Globe, TrendingUp, Award, Shield, Target, AlertTriangle, Info, Copy, Phone
+  Camera, DollarSign, TrendingUp, Award, Shield, Target, AlertTriangle, Info, Copy, Phone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -61,10 +61,8 @@ import OperadoraOiSection from '@/components/dashboard/OperadoraOiSection';
 import OperadoraTimSection from '@/components/dashboard/OperadoraTimSection';
 import ClaroSection from '@/components/dashboard/ClaroSection';
 import VivoSection from '@/components/dashboard/VivoSection';
-import HistoricoVeiculoSection from '@/components/dashboard/HistoricoVeiculoSection';
 import SenhaEmailSection from '@/components/dashboard/SenhaEmailSection';
 import SenhaCpfSection from '@/components/dashboard/SenhaCpfSection';
-import BoletimOcorrenciaSection from '@/components/dashboard/BoletimOcorrenciaSection';
 import FotosSection from '@/components/dashboard/FotosSection';
 import CertidaoNascimentoSection from '@/components/dashboard/CertidaoNascimentoSection';
 import DocumentoSection from '@/components/dashboard/DocumentoSection';
@@ -2931,9 +2929,6 @@ Todos os direitos reservados.`;
             <ParentesSection cpfId={result.id} onCountChange={setParentesCount} />
           </div>
 
-          {/* Cônjuge */}
-          <PlaceholderSection title="Cônjuge" icon={Heart} />
-
           {/* Certidão de Nascimento */}
           <div id="certidao-nascimento-section">
             <CertidaoNascimentoSection cpfId={result.id} onCountChange={setCertidaoNascimentoCount} />
@@ -2953,12 +2948,6 @@ Todos os direitos reservados.`;
           <div id="pis-section">
             <PisSection pis={result.pis} />
           </div>
-
-          {/* Histórico de Veículos */}
-          <HistoricoVeiculoSection cpfId={result.id} />
-
-          {/* Últimos Veículos */}
-          <PlaceholderSection title="Últimos Veículos" icon={Globe} />
 
 
 
@@ -3028,9 +3017,6 @@ Todos os direitos reservados.`;
           </div>
 
           {/* (Removido) Documento/RG, CNH e NIS conforme solicitado */}
-
-          {/* Boletim de Ocorrência */}
-          <BoletimOcorrenciaSection cpfId={result.id} />
 
           {/* Gestão Cadastral */}
           <div id="gestao-cadastral-section">
