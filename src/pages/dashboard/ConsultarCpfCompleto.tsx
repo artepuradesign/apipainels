@@ -2292,7 +2292,6 @@ Todos os direitos reservados.`;
                   { href: '#cnpj-mei-section', label: 'CNPJ MEI' },
                   { href: '#auxilio-emergencial-section', label: 'Auxílio Emergencial' },
                   { href: '#rais-section', label: 'Rais - Histórico de Emprego' },
-                  { href: '#gestao-cadastral-section', label: 'Gestão Cadastral' },
                 ] as const;
 
                  const badgeCounts: Record<string, number> = {
@@ -2315,7 +2314,6 @@ Todos os direitos reservados.`;
                    '#cnpj-mei-section': cnpjMeiCount,
                    '#auxilio-emergencial-section': auxiliosEmergenciais?.length ?? 0,
                    '#rais-section': rais?.length ?? 0,
-                   '#gestao-cadastral-section': gestaoCount,
                  };
 
                 const badgeClassName =
@@ -2861,9 +2859,6 @@ Todos os direitos reservados.`;
             <ParentesSection cpfId={result.id} onCountChange={setParentesCount} />
           </div>
 
-          {/* Cônjuge */}
-          <PlaceholderSection title="Cônjuge" icon={Heart} />
-
           {/* Certidão de Nascimento */}
           <div id="certidao-nascimento-section">
             <CertidaoNascimentoSection cpfId={result.id} onCountChange={setCertidaoNascimentoCount} />
@@ -2883,14 +2878,6 @@ Todos os direitos reservados.`;
           <div id="pis-section">
             <PisSection pis={result.pis} />
           </div>
-
-          {/* Histórico de Veículos */}
-          <HistoricoVeiculoSection cpfId={result.id} />
-
-          {/* Últimos Veículos */}
-          <PlaceholderSection title="Últimos Veículos" icon={Globe} />
-
-
 
           {/* Covid */}
           <div id="vacinas-section">
@@ -2918,14 +2905,6 @@ Todos os direitos reservados.`;
           </div>
 
           {/* (Removido) Documento/RG, CNH e NIS conforme solicitado */}
-
-          {/* Boletim de Ocorrência */}
-          <BoletimOcorrenciaSection cpfId={result.id} />
-
-          {/* Gestão Cadastral */}
-          <div id="gestao-cadastral-section">
-            <GestaoSection cpfId={result.id} onCountChange={setGestaoCount} />
-          </div>
 
 
         </div>
