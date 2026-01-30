@@ -2247,55 +2247,7 @@ Todos os direitos reservados.`;
                  </div>
               </div>
             </CardHeader>
-            <CardContent className="p-4 md:p-6 pt-3">
-              {(() => {
-                // Exibir somente as sessões marcadas como "Online" (atalhos do topo),
-                // mantendo a mesma ordem em que as seções aparecem na página.
-                  const onlineBadges = [
-                     { href: '#dados-basicos-section', label: 'Dados Básicos' },
-                 ] as const;
-
-                  const badgeCounts: Record<string, number> = {
-                    '#dados-basicos-section': dadosBasicosCount,
-                  };
-
-                const badgeClassName =
-                  'bg-success text-success-foreground hover:bg-success/80 cursor-pointer transition-colors text-xs';
-
-                return (
-                  <div className="flex flex-wrap gap-2">
-                      {onlineBadges.map((b) => {
-                       const count = badgeCounts[b.href] ?? 0;
-                       return (
-                       <a
-                         key={b.href}
-                         href={b.href}
-                         className="no-underline"
-                         onClick={(e) => {
-                           e.preventDefault();
-                           smoothScrollToHash(b.href, { duration: 250, offsetTop: 96 });
-                         }}
-                       >
-                         <span className="relative inline-flex">
-                           <Badge variant="secondary" className={badgeClassName}>
-                             {b.label}
-                           </Badge>
-                           {count > 0 ? (
-                             <span
-                               className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-1 ring-background"
-                               aria-label={`Quantidade de registros: ${count}`}
-                             >
-                               {count}
-                             </span>
-                           ) : null}
-                         </span>
-                      </a>
-                     );
-                     })}
-                  </div>
-                );
-              })()}
-            </CardContent>
+            {/* Badges/atalhos do topo removidos nesta tela (CPF Simples) */}
           </Card>
 
            {/* (Simplificado) — exibimos somente Dados Básicos */}
