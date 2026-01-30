@@ -634,6 +634,10 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
   const showEnderecosSection = !isRestrictedMode || isRestrictToBasicAndEnderecos;
   const showParentesSection = !isRestrictedMode || isRestrictToBasicAndParentes;
 
+  // Nessas telas enxutas, não exibimos os badges de atalho no topo.
+  const hideShortcutBadges =
+    isRestrictToBasicAndTelefones || isRestrictToBasicAndEmails || isRestrictToBasicAndEnderecos;
+
   const navigate = useNavigate();
   const location = useLocation();
   const [cpf, setCpf] = useState('');
@@ -2372,7 +2376,7 @@ Todos os direitos reservados.`;
               </div>
             </CardHeader>
             <CardContent className="p-4 md:p-6 pt-3">
-              {(() => {
+              {!hideShortcutBadges && (() => {
                 // Exibir somente as sessões marcadas como "Online" (atalhos do topo),
                 // mantendo a mesma ordem em que as seções aparecem na página.
                  const onlineBadgesBase = [
