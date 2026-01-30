@@ -34,7 +34,7 @@ import { cookieUtils } from '@/utils/cookieUtils';
 import PriceDisplay from '@/components/dashboard/PriceDisplay';
 import { checkBalanceForModule } from '@/utils/balanceChecker';
 import { getModulePrice } from '@/utils/modulePrice';
-import { getModulePriceById } from '@/services/moduleService';
+import { getModulePriceById, moduleService } from '@/services/moduleService';
 import ConsultaHistoryItem from '@/components/consultas/ConsultaHistoryItem';
 import ConsultationCard from '@/components/historico/ConsultationCard';
 import ConsultationsSection from '@/components/historico/sections/ConsultationsSection';
@@ -81,7 +81,13 @@ import SimpleTitleBar from '@/components/dashboard/SimpleTitleBar';
 import { smoothScrollToHash } from '@/utils/smoothScroll';
 
 // Função melhorada para consultar CPF e registrar com debug robusto
-const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any) => {
+const consultarCPFComRegistro = async (
+  cpf: string,
+  cost: number,
+  metadata: any,
+  moduleId: number,
+  source: string
+) => {
   console.log('🔍 [CPF_CONSULTA] INÍCIO - Consultando CPF:', cpf);
   console.log('💰 [CPF_CONSULTA] Custo da consulta (VALOR COM DESCONTO):', cost);
   console.log('🔑 [CPF_CONSULTA] Metadata enviado:', metadata);
@@ -173,7 +179,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           user_agent: navigator.userAgent,
           saldo_usado: saldoUsado, // Incluir o tipo de saldo usado
             metadata: {
-              source: 'consultar-cpf-puxa-tudo',
+              source,
               page_route: window.location.pathname,
               discount: metadata.discount || 0,
               original_price: metadata.original_price || finalCost, // preço original sem desconto do módulo ID 83
@@ -181,7 +187,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
               final_price: metadata.final_price || finalCost,
               subscription_discount: metadata.subscription_discount || false,
               plan_type: metadata.plan_type || 'Pré-Pago',
-              module_id: 83, // ID do módulo CPF
+              module_id: moduleId,
               timestamp: new Date().toISOString(),
               saldo_usado: saldoUsado
             }
@@ -319,7 +325,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
           user_agent: navigator.userAgent,
           saldo_usado: saldoUsado,
           metadata: {
-            source: 'consultar-cpf-puxa-tudo-precheck',
+            source: `${source}-precheck`,
             page_route: window.location.pathname,
             discount: metadata.discount || 0,
             original_price: metadata.original_price || finalCost,
@@ -327,7 +333,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
             final_price: metadata.final_price || finalCost,
             subscription_discount: metadata.subscription_discount || false,
             plan_type: metadata.plan_type || 'Pré-Pago',
-            module_id: 83,
+            module_id: moduleId,
             timestamp: new Date().toISOString(),
             saldo_usado: saldoUsado
           }
@@ -404,7 +410,7 @@ const consultarCPFComRegistro = async (cpf: string, cost: number, metadata: any)
                 final_price: metadata.final_price || finalCost,
                 subscription_discount: metadata.subscription_discount || false,
                 plan_type: metadata.plan_type || 'Pré-Pago',
-                module_id: 83,
+                module_id: moduleId,
                 timestamp: new Date().toISOString(),
                 saldo_usado: saldoUsado
               }
@@ -573,7 +579,24 @@ interface CPFResult {
   cloud_email?: any[];
 }
 
-const ConsultarCpfPuxaTudo = () => {
+export interface ConsultarCpfPuxaTudoProps {
+  /** ID do módulo cadastrado no banco (usado para preço/título e metadata.module_id) */
+  moduleId?: number;
+  /** Identificador de origem salvo no histórico (metadata.source) */
+  source?: string;
+  /** Fallback para o util moduleData quando a API de módulos falhar */
+  fallbackPricePath?: string;
+}
+
+const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
+  moduleId: moduleIdProp,
+  source: sourceProp,
+  fallbackPricePath,
+}) => {
+  const moduleId = moduleIdProp ?? 83;
+  const source = sourceProp ?? 'consultar-cpf-puxa-tudo';
+  const fallbackModulePath = fallbackPricePath ?? '/dashboard/consultar-cpf-puxa-tudo';
+
   const navigate = useNavigate();
   const location = useLocation();
   const [cpf, setCpf] = useState('');
@@ -608,6 +631,8 @@ const ConsultarCpfPuxaTudo = () => {
   const [modulePrice, setModulePrice] = useState(0);
   const [modulePriceLoading, setModulePriceLoading] = useState(true);
   const [balanceCheckLoading, setBalanceCheckLoading] = useState(true);
+  const [moduleTitle, setModuleTitle] = useState<string>('');
+  const [moduleSubtitle, setModuleSubtitle] = useState<string>('');
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
@@ -653,6 +678,27 @@ const ConsultarCpfPuxaTudo = () => {
   const isMobile = useIsMobile();
   const resultRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  // Carregar título/descrição do módulo (do cadastro)
+  useEffect(() => {
+    let cancelled = false;
+    const loadModuleInfo = async () => {
+      try {
+        const res = await moduleService.getModuleById(moduleId);
+        if (!cancelled && res.success && res.data) {
+          setModuleTitle(res.data.title || res.data.name || '');
+          setModuleSubtitle(res.data.description || '');
+        }
+      } catch {
+        // Silencioso: mantém fallbacks.
+      }
+    };
+
+    loadModuleInfo();
+    return () => {
+      cancelled = true;
+    };
+  }, [moduleId]);
   
   // Hook para saldo da API externa
   const { balance, loadBalance: reloadApiBalance } = useWalletBalance();
@@ -928,29 +974,29 @@ const ConsultarCpfPuxaTudo = () => {
     });
   };
 
-  // Carregar preço do módulo ID 83 da API
+  // Carregar preço do módulo (via API) pelo ID
   const loadModulePrice = async () => {
     try {
       setModulePriceLoading(true);
-      console.log('💰 Carregando preço do módulo ID 83 via API...');
+      console.log(`💰 Carregando preço do módulo ID ${moduleId} via API...`);
       
       // Buscar preço direto da API usando o serviço correto
-      const price = await getModulePriceById(83);
+      const price = await getModulePriceById(moduleId);
       
       if (price && price > 0) {
         setModulePrice(price);
-        console.log('✅ Preço do módulo ID 83 carregado da API:', price);
+        console.log(`✅ Preço do módulo ID ${moduleId} carregado da API:`, price);
       } else {
         console.warn('⚠️ Preço inválido recebido da API, usando fallback');
         // Fallback para o preço padrão do moduleData.ts apenas se API falhar
-        const fallbackPrice = getModulePrice('/dashboard/consultar-cpf');
+        const fallbackPrice = getModulePrice(fallbackModulePath);
         setModulePrice(fallbackPrice);
         console.log('⚠️ Usando preço fallback:', fallbackPrice);
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar preço do módulo ID 83:', error);
+      console.error(`❌ Erro ao carregar preço do módulo ID ${moduleId}:`, error);
       // Fallback para o preço padrão do moduleData.ts
-      const fallbackPrice = getModulePrice('/dashboard/consultar-cpf');
+      const fallbackPrice = getModulePrice(fallbackModulePath);
       setModulePrice(fallbackPrice);
       console.log('⚠️ Usando preço fallback devido ao erro:', fallbackPrice);
     } finally {
@@ -1424,7 +1470,7 @@ const ConsultarCpfPuxaTudo = () => {
         session_token: sessionToken,
         plan_balance: planBalance,
         wallet_balance: walletBalance
-      });
+      }, moduleId, source);
       
       console.log('📊 [HANDLE_SEARCH] Resultado da consulta:', {
         success: baseCpfResult.success,
@@ -1962,8 +2008,8 @@ Todos os direitos reservados.`;
     <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
       <div className="w-full">
         <SimpleTitleBar
-          title="Consulta CPF"
-          subtitle="Consulte dados do CPF na base de dados"
+          title={moduleTitle || 'Consulta CPF'}
+          subtitle={moduleSubtitle || 'Consulte dados do CPF na base de dados'}
           icon={<Search className="h-4 w-4 md:h-5 md:w-5" />}
           onBack={handleBack}
         />
