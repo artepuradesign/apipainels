@@ -593,6 +593,9 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
   const source = sourceProp ?? 'consultar-cpf-completo';
   const navigate = useNavigate();
   const location = useLocation();
+  // No módulo CPF FOTO (ID 23) a UI deve exibir apenas: Fotos, Dados Básicos, Telefones, Emails e Endereços.
+  const isCpfFoto =
+    moduleId === 23 || source === 'consultar-cpf-foto' || location.pathname.includes('/dashboard/consultar-cpf-foto');
   const [cpf, setCpf] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CPFResult | null>(null);
@@ -2312,27 +2315,37 @@ Todos os direitos reservados.`;
               {(() => {
                 // Exibir somente as sessões marcadas como "Online" (atalhos do topo),
                 // mantendo a mesma ordem em que as seções aparecem na página.
-                  const onlineBadges = [
-                     { href: '#fotos-section', label: 'Fotos' },
-                     { href: '#csb8-section', label: 'CSB8' },
-                     { href: '#csba-section', label: 'CSBA' },
-                   { href: '#dados-financeiros-section', label: 'Dados Financeiros' },
-                  { href: '#dados-basicos-section', label: 'Dados Básicos' },
-                  { href: '#telefones-section', label: 'Telefones' },
-                  { href: '#emails-section', label: 'Emails' },
-                  { href: '#enderecos-section', label: 'Endereços' },
-                  { href: '#titulo-eleitor-section', label: 'Título de Eleitor' },
-                  { href: '#parentes-section', label: 'Parentes' },
-                  { href: '#certidao-nascimento-section', label: 'Certidão de Nascimento' },
-                  { href: '#documento-section', label: 'Documento' },
-                  { href: '#cns-section', label: 'CNS' },
-                  { href: '#pis-section', label: 'PIS' },
-                  { href: '#vacinas-section', label: 'Vacinas' },
-                  { href: '#empresas-socio-section', label: 'Empresas Associadas (SÓCIO)' },
-                  { href: '#cnpj-mei-section', label: 'CNPJ MEI' },
-                  { href: '#auxilio-emergencial-section', label: 'Auxílio Emergencial' },
-                  { href: '#rais-section', label: 'Rais - Histórico de Emprego' },
-                ] as const;
+                  const allOnlineBadges = [
+                    { href: '#fotos-section', label: 'Fotos' },
+                    { href: '#csb8-section', label: 'CSB8' },
+                    { href: '#csba-section', label: 'CSBA' },
+                    { href: '#dados-financeiros-section', label: 'Dados Financeiros' },
+                    { href: '#dados-basicos-section', label: 'Dados Básicos' },
+                    { href: '#telefones-section', label: 'Telefones' },
+                    { href: '#emails-section', label: 'Emails' },
+                    { href: '#enderecos-section', label: 'Endereços' },
+                    { href: '#titulo-eleitor-section', label: 'Título de Eleitor' },
+                    { href: '#parentes-section', label: 'Parentes' },
+                    { href: '#certidao-nascimento-section', label: 'Certidão de Nascimento' },
+                    { href: '#documento-section', label: 'Documento' },
+                    { href: '#cns-section', label: 'CNS' },
+                    { href: '#pis-section', label: 'PIS' },
+                    { href: '#vacinas-section', label: 'Vacinas' },
+                    { href: '#empresas-socio-section', label: 'Empresas Associadas (SÓCIO)' },
+                    { href: '#cnpj-mei-section', label: 'CNPJ MEI' },
+                    { href: '#auxilio-emergencial-section', label: 'Auxílio Emergencial' },
+                    { href: '#rais-section', label: 'Rais - Histórico de Emprego' },
+                  ] as const;
+
+                  const onlineBadges = isCpfFoto
+                    ? ([
+                        { href: '#fotos-section', label: 'Fotos' },
+                        { href: '#dados-basicos-section', label: 'Dados Básicos' },
+                        { href: '#telefones-section', label: 'Telefones' },
+                        { href: '#emails-section', label: 'Emails' },
+                        { href: '#enderecos-section', label: 'Endereços' },
+                      ] as const)
+                    : allOnlineBadges;
 
                  const badgeCounts: Record<string, number> = {
                    '#fotos-section': fotosCount,
@@ -2400,8 +2413,10 @@ Todos os direitos reservados.`;
             <FotosSection cpfId={result.id} cpfNumber={result.cpf} onCountChange={setFotosCount} />
           </div>
 
-            {/* CSB8 + CSBA (responsivo e compacto) */}
-            <section className="mx-auto w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+            {!isCpfFoto ? (
+              <>
+                {/* CSB8 + CSBA (responsivo e compacto) */}
+                <section className="mx-auto w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
               <Card id="csb8-section" className={onlineCardClass(hasValue(result.csb8) || hasValue(result.csb8_faixa))}>
                   <CardContent className="p-2">
                     <ScoreGaugeCard
@@ -2495,10 +2510,10 @@ Todos os direitos reservados.`;
                     />
                </CardContent>
              </Card>
-           </section>
+                </section>
 
-          {/* Dados Financeiros */}
-          <Card id="dados-financeiros-section" className={onlineCardClass(hasDadosFinanceiros)}>
+                {/* Dados Financeiros */}
+                <Card id="dados-financeiros-section" className={onlineCardClass(hasDadosFinanceiros)}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
@@ -2574,7 +2589,9 @@ Todos os direitos reservados.`;
                 </div>
               </div>
             </CardContent>
-          </Card>
+                </Card>
+              </>
+            ) : null}
 
           {/* Dados Básicos */}
           <Card id="dados-basicos-section" className={onlineCardClass(hasDadosBasicos) ? `w-full ${onlineCardClass(hasDadosBasicos)}` : "w-full"}>
@@ -2788,7 +2805,7 @@ Todos os direitos reservados.`;
                 </div>
                 ) : null}
 
-                {result.titulo_eleitor ? (
+                {!isCpfFoto && result.titulo_eleitor ? (
                 <div>
                   <Label className="text-xs sm:text-sm" htmlFor="titulo_eleitor_basicos">Título de Eleitor</Label>
                   <Input
@@ -2818,6 +2835,8 @@ Todos os direitos reservados.`;
               <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
            </div>
 
+          {!isCpfFoto ? (
+            <>
           {/* Título de Eleitor */}
           <Card id="titulo-eleitor-section" className={onlineCardClass(hasTituloEleitor)}>
             <CardHeader className="p-4 md:p-6">
@@ -2943,6 +2962,9 @@ Todos os direitos reservados.`;
           <div id="rais-section">
             <RaisSection data={rais} isLoading={raisLoading} />
           </div>
+
+            </>
+          ) : null}
 
           {/* (Removido) Documento/RG, CNH e NIS conforme solicitado */}
 
