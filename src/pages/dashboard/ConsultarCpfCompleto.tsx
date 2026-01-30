@@ -772,8 +772,10 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
           const r = (route || '').toString();
           if (!r) return '-';
           if (r.includes('/dashboard/consultar-cpf-completo')) return 'CPF COMPLETO';
+            if (r.includes('/dashboard/consultar-cpf-foto')) return 'CPF FOTO';
           if (r.includes('/dashboard/consultar-cpf-simples')) return 'CPF SIMPLES';
           if (r.includes('/dashboard/consultar-cpf-puxa-tudo')) return 'CPF PUXA TUDO';
+            if (r.includes('/dashboard/consultar-cpf-parentes')) return 'CPF PARENTES';
           return r;
         };
 
@@ -783,7 +785,8 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
           .map((consultation: any) => ({
             id: `consultation-${consultation.id}`,
             type: 'consultation',
-            module_type: getModuleLabel(consultation?.metadata?.page_route),
+              // Prioriza o título salvo no histórico (derivado do cadastro do módulo)
+              module_type: consultation?.metadata?.module_title || getModuleLabel(consultation?.metadata?.page_route),
             document: consultation.document,
             cost: consultation.cost,
             amount: -Math.abs(consultation.cost),
