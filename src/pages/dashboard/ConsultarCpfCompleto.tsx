@@ -2183,8 +2183,6 @@ Todos os direitos reservados.`;
 
       {/* Resultado da Consulta */}
       {result && (() => {
-        const scoreData = getScoreStatus(Number(result.score) || 0);
-
         const hasValue = (v: unknown) => {
           if (v === null || v === undefined) return false;
           if (typeof v === 'string') return v.trim().length > 0;
@@ -2227,7 +2225,6 @@ Todos os direitos reservados.`;
           result.fx_poder_aquisitivo,
         ].some(hasValue);
 
-        const scoreCount = Number(result.score) > 0 ? 1 : 0;
         const csb8Count = (hasValue(result.csb8) || hasValue(result.csb8_faixa)) ? 1 : 0;
         const csbaCount = (hasValue(result.csba) || hasValue(result.csba_faixa)) ? 1 : 0;
         const dadosFinanceirosCount = hasDadosFinanceiros ? 1 : 0;
@@ -2275,11 +2272,10 @@ Todos os direitos reservados.`;
               {(() => {
                 // Exibir somente as sessões marcadas como "Online" (atalhos do topo),
                 // mantendo a mesma ordem em que as seções aparecem na página.
-                 const onlineBadges = [
-                    { href: '#fotos-section', label: 'Fotos' },
-                    { href: '#score-section', label: 'Score' },
-                    { href: '#csb8-section', label: 'CSB8' },
-                    { href: '#csba-section', label: 'CSBA' },
+                  const onlineBadges = [
+                     { href: '#fotos-section', label: 'Fotos' },
+                     { href: '#csb8-section', label: 'CSB8' },
+                     { href: '#csba-section', label: 'CSBA' },
                    { href: '#dados-financeiros-section', label: 'Dados Financeiros' },
                   { href: '#dados-basicos-section', label: 'Dados Básicos' },
                   { href: '#telefones-section', label: 'Telefones' },
@@ -2294,22 +2290,13 @@ Todos os direitos reservados.`;
                   { href: '#vacinas-section', label: 'Vacinas' },
                   { href: '#empresas-socio-section', label: 'Empresas Associadas (SÓCIO)' },
                   { href: '#cnpj-mei-section', label: 'CNPJ MEI' },
-                  { href: '#dividas-ativas-section', label: 'Dívidas Ativas (SIDA)' },
                   { href: '#auxilio-emergencial-section', label: 'Auxílio Emergencial' },
                   { href: '#rais-section', label: 'Rais - Histórico de Emprego' },
-                  { href: '#inss-section', label: 'INSS' },
-                  { href: '#claro-section', label: 'Operadora Claro' },
-                  { href: '#vivo-section', label: 'Operadora Vivo' },
-                  { href: '#tim-section', label: 'Operadora TIM' },
-                  { href: '#oi-section', label: 'Operadora OI' },
-                  { href: '#senhas-email-section', label: 'Senhas de Email' },
-                  { href: '#senhas-cpf-section', label: 'Senhas de CPF' },
                   { href: '#gestao-cadastral-section', label: 'Gestão Cadastral' },
                 ] as const;
 
                  const badgeCounts: Record<string, number> = {
                    '#fotos-section': fotosCount,
-                    '#score-section': scoreCount,
                     '#csb8-section': csb8Count,
                     '#csba-section': csbaCount,
                     '#dados-financeiros-section': dadosFinanceirosCount,
@@ -2326,16 +2313,8 @@ Todos os direitos reservados.`;
                    '#vacinas-section': vacinasCount,
                    '#empresas-socio-section': empresasSocioCount,
                    '#cnpj-mei-section': cnpjMeiCount,
-                   '#dividas-ativas-section': dividasAtivasCount,
                    '#auxilio-emergencial-section': auxiliosEmergenciais?.length ?? 0,
                    '#rais-section': rais?.length ?? 0,
-                   '#inss-section': inssCount,
-                   '#claro-section': claroCount,
-                   '#vivo-section': vivoCount,
-                   '#tim-section': timCount,
-                   '#oi-section': oiCount,
-                   '#senhas-email-section': senhaEmailCount,
-                   '#senhas-cpf-section': senhaCpfCount,
                    '#gestao-cadastral-section': gestaoCount,
                  };
 
@@ -2378,64 +2357,14 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
-          {/* Fotos - Usando FotosSection para consistência */}
+           {/* Fotos - Usando FotosSection para consistência */}
           <div id="fotos-section">
             <FotosSection cpfId={result.id} cpfNumber={result.cpf} onCountChange={setFotosCount} />
           </div>
 
-           {/* Score + CSB8 + CSBA (responsivo e compacto) */}
-           <section className="mx-auto w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-             <Card id="score-section" className={onlineCardClass(hasValue(result.score))}>
-                  <CardContent className="p-2 space-y-1">
-                    <ScoreGaugeCard
-                      title="SCORE"
-                      score={result.score}
-                      faixa={scoreData.label}
-                      icon="chart"
-                      compact
-                      embedded
-                      headerRight={
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const dados = [
-                                `SCORE: ${result.score || '-'}`,
-                                `FAIXA: ${scoreData.label || '-'}`,
-                              ].join('\n');
-                              navigator.clipboard.writeText(dados);
-                              toast.success('Score copiado!');
-                            }}
-                            className="h-7 w-7"
-                            title="Copiar dados da seção"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-
-                          <div className="relative inline-flex">
-                            <Badge variant="secondary" className="uppercase tracking-wide text-[9px]">
-                              Online
-                            </Badge>
-                            {scoreCount > 0 ? (
-                              <span
-                                className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-1 ring-background"
-                                aria-label={`Quantidade de registros Score: ${scoreCount}`}
-                              >
-                                {scoreCount}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      }
-                    />
-                  {scoreData.description !== 'Score baixo, precisa de atenção' && (
-                    <p className="text-xs text-muted-foreground">{scoreData.description}</p>
-                  )}
-               </CardContent>
-             </Card>
-
-             <Card id="csb8-section" className={onlineCardClass(hasValue(result.csb8) || hasValue(result.csb8_faixa))}>
+            {/* CSB8 + CSBA (responsivo e compacto) */}
+            <section className="mx-auto w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+              <Card id="csb8-section" className={onlineCardClass(hasValue(result.csb8) || hasValue(result.csb8_faixa))}>
                   <CardContent className="p-2">
                     <ScoreGaugeCard
                       title="CSB8 [SCORE]"
@@ -2978,11 +2907,6 @@ Todos os direitos reservados.`;
             <CnpjMeiSection cpfId={result.id} onCountChange={setCnpjMeiCount} />
           </div>
 
-          {/* Dívidas Ativas (SIDA) */}
-          <div id="dividas-ativas-section">
-            <DividasAtivasSection cpf={result.id.toString()} onCountChange={setDividasAtivasCount} />
-          </div>
-
           {/* Auxílio Emergencial */}
           <div id="auxilio-emergencial-section">
             <AuxilioEmergencialSection auxilios={auxiliosEmergenciais} />
@@ -2991,41 +2915,6 @@ Todos os direitos reservados.`;
           {/* Rais - Histórico de Emprego */}
           <div id="rais-section">
             <RaisSection data={rais} isLoading={raisLoading} />
-          </div>
-
-          {/* INSS */}
-          <div id="inss-section">
-            <InssSection cpfId={result.id} onCountChange={setInssCount} />
-          </div>
-
-          {/* Operadora Claro */}
-          <div id="claro-section">
-            <ClaroSection cpfId={result.id} onCountChange={setClaroCount} />
-          </div>
-
-          {/* Operadora Vivo */}
-          <div id="vivo-section">
-            <VivoSection cpfId={result.id} onCountChange={setVivoCount} />
-          </div>
-
-          {/* Operadora Tim */}
-          <div id="tim-section">
-            <OperadoraTimSection cpfId={result.id} onCountChange={setTimCount} />
-          </div>
-
-          {/* Operadora OI */}
-          <div id="oi-section">
-            <OperadoraOiSection cpfId={result.id} onCountChange={setOiCount} />
-          </div>
-
-          {/* Senhas de Email */}
-          <div id="senhas-email-section">
-            <SenhaEmailSection cpfId={result.id} onCountChange={setSenhaEmailCount} />
-          </div>
-
-          {/* Senhas do CPF */}
-          <div id="senhas-cpf-section">
-            <SenhaCpfSection cpfId={result.id} onCountChange={setSenhaCpfCount} />
           </div>
 
           {/* (Removido) Documento/RG, CNH e NIS conforme solicitado */}
