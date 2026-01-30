@@ -94,7 +94,9 @@ const HistoricoConsultasCpf: React.FC = () => {
     const route = pageRoute.toLowerCase();
 
     if (route.includes('consultar-cpf-simples')) return 'CPF Simples';
+    if (route.includes('consultar-cpf-completo')) return 'CPF Completo';
     if (route.includes('consultar-cpf-puxa-tudo')) return 'CPF Puxa Tudo';
+    if (route.includes('consultar-cpf-basico')) return 'CPF Básico';
     if (route.includes('consultar-cpf-simple')) return 'CPF Simples';
 
     return '—';
