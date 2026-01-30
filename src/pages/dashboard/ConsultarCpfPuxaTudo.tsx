@@ -2375,8 +2375,9 @@ Todos os direitos reservados.`;
                  </div>
               </div>
             </CardHeader>
-            <CardContent className="p-4 md:p-6 pt-3">
-              {!hideShortcutBadges && (() => {
+            {!hideShortcutBadges && (
+              <CardContent className="p-4 md:p-6 pt-3">
+                {(() => {
                 // Exibir somente as sessões marcadas como "Online" (atalhos do topo),
                 // mantendo a mesma ordem em que as seções aparecem na página.
                  const onlineBadgesBase = [
@@ -2490,8 +2491,9 @@ Todos os direitos reservados.`;
                      })}
                   </div>
                 );
-              })()}
-            </CardContent>
+                })()}
+              </CardContent>
+            )}
           </Card>
 
           {!isRestrictedMode && (
