@@ -46,9 +46,7 @@ import ConsultationDetailDialog from '@/components/consultas/ConsultationDetailD
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatDateOnly } from '@/utils/formatters';
 import ParentesSection from '@/components/dashboard/ParentesSection';
-import TelefonesSection from '@/components/dashboard/TelefonesSection';
-import EmailsSection from '@/components/dashboard/EmailsSection';
-import EnderecosSection from '@/components/dashboard/EnderecosSection';
+// TelefonesSection/EmailsSection/EnderecosSection removidos nesta tela (CPF Simples)
 import VacinaDisplay from '@/components/vacina/VacinaDisplay';
 import EmpresasSocioSection from '@/components/dashboard/EmpresasSocioSection';
 import CnpjMeiSection from '@/components/dashboard/CnpjMeiSection';
@@ -592,9 +590,7 @@ const ConsultarCpfPuxaTudo = () => {
   const [cpf, setCpf] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CPFResult | null>(null);
-  const [telefonesCount, setTelefonesCount] = useState(0);
-  const [emailsCount, setEmailsCount] = useState(0);
-  const [enderecosCount, setEnderecosCount] = useState(0);
+  // Contadores de seções removidas (Telefones/Emails/Endereços)
   const [receitaData, setReceitaData] = useState<BaseReceita | null>(null);
   const [queryHistory, setQueryHistory] = useState<any[]>([]);
   const [recentConsultations, setRecentConsultations] = useState<any[]>([]);
@@ -2255,19 +2251,13 @@ Todos os direitos reservados.`;
               {(() => {
                 // Exibir somente as sessões marcadas como "Online" (atalhos do topo),
                 // mantendo a mesma ordem em que as seções aparecem na página.
-                 const onlineBadges = [
-                    { href: '#dados-basicos-section', label: 'Dados Básicos' },
-                    { href: '#telefones-section', label: 'Telefones' },
-                    { href: '#emails-section', label: 'Emails' },
-                    { href: '#enderecos-section', label: 'Endereços' },
-                ] as const;
+                  const onlineBadges = [
+                     { href: '#dados-basicos-section', label: 'Dados Básicos' },
+                 ] as const;
 
-                 const badgeCounts: Record<string, number> = {
+                  const badgeCounts: Record<string, number> = {
                     '#dados-basicos-section': dadosBasicosCount,
-                   '#telefones-section': telefonesCount,
-                   '#emails-section': emailsCount,
-                   '#enderecos-section': enderecosCount,
-                 };
+                  };
 
                 const badgeClassName =
                   'bg-success text-success-foreground hover:bg-success/80 cursor-pointer transition-colors text-xs';
@@ -2308,7 +2298,7 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
-          {/* (Simplificado) — exibimos somente Dados Básicos, Telefones, Emails e Endereços */}
+           {/* (Simplificado) — exibimos somente Dados Básicos */}
 
           {/* Dados Básicos */}
           <Card id="dados-basicos-section" className={onlineCardClass(hasDadosBasicos) ? `w-full ${onlineCardClass(hasDadosBasicos)}` : "w-full"}>
@@ -2525,20 +2515,7 @@ Todos os direitos reservados.`;
             </CardContent>
           </Card>
 
-           {/* Telefones */}
-           <div id="telefones-section">
-              <TelefonesSection cpfId={result.id} onCountChange={setTelefonesCount} compact />
-           </div>
-
-           {/* Emails */}
-           <div id="emails-section">
-              <EmailsSection cpfId={result.id} onCountChange={setEmailsCount} compact />
-           </div>
-
-           {/* Endereços */}
-           <div id="enderecos-section">
-              <EnderecosSection cpfId={result.id} onCountChange={setEnderecosCount} />
-           </div>
+           {/* Telefones/Emails/Endereços removidos nesta tela */}
         </div>
         );
       })()}
