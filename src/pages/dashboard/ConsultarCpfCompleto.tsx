@@ -676,6 +676,17 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
   const resultRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
+  // CPF FOTO: cobrar somente se houver pelo menos 1 foto.
+  // Usamos -1 como sentinela de "ainda não carregou" (diferente de "carregou e veio 0").
+  const [cpfFotoChargePending, setCpfFotoChargePending] = useState<null | {
+    cpf: string;
+    originalPrice: number;
+    finalPrice: number;
+    discount: number;
+    sessionToken: string;
+  }>(null);
+  const [cpfFotoCharging, setCpfFotoCharging] = useState(false);
+
   // Carregar título/descrição do módulo (do cadastro)
   useEffect(() => {
     let cancelled = false;
@@ -728,6 +739,98 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
   const userPlan = hasActiveSubscription && subscription 
     ? subscription.plan_name 
     : (user ? localStorage.getItem(`user_plan_${user.id}`) || "Pré-Pago" : "Pré-Pago");
+
+  // CPF FOTO: após a seção de fotos carregar, decide se deve cobrar.
+  // (posicionado aqui para garantir que hooks/variáveis usadas já existam)
+  useEffect(() => {
+    if (!isCpfFoto) return;
+    if (!user) return;
+    if (!cpfFotoChargePending) return;
+    if (fotosCount < 0) return; // ainda não carregou
+    if (cpfFotoCharging) return;
+
+    // Carregou e não tem fotos: não cobrar.
+    if (fotosCount === 0) {
+      setCpfFotoChargePending(null);
+      toast.info('Nenhuma foto encontrada. Consulta não cobrada.');
+      return;
+    }
+
+    // Tem fotos: cobrar/registrar agora.
+    (async () => {
+      try {
+        setCpfFotoCharging(true);
+        await consultarCPFComRegistro(
+          cpfFotoChargePending.cpf,
+          cpfFotoChargePending.finalPrice,
+          {
+            discount: cpfFotoChargePending.discount,
+            original_price: cpfFotoChargePending.originalPrice,
+            final_price: cpfFotoChargePending.finalPrice,
+            subscription_discount: hasActiveSubscription,
+            plan_type: userPlan,
+            user_id: parseInt(user.id),
+            user_name: user.full_name || user.email || 'Arte Pura',
+            session_token: cpfFotoChargePending.sessionToken,
+            plan_balance: planBalance,
+            wallet_balance: walletBalance,
+          },
+          moduleId,
+          source
+        );
+
+        // Recarregar saldo após cobrança (best-effort)
+        await reloadApiBalance();
+        loadBalances();
+
+        // Atualizar saldo localmente para feedback imediato
+        const finalPrice = cpfFotoChargePending.finalPrice;
+        const saldoUsado = planBalance >= finalPrice ? 'plano' :
+          (planBalance > 0 && (planBalance + walletBalance) >= finalPrice) ? 'misto' : 'carteira';
+
+        if (saldoUsado === 'plano') {
+          const newPlanBalance = Math.max(0, planBalance - finalPrice);
+          setPlanBalance(newPlanBalance);
+          localStorage.setItem(`plan_balance_${user.id}`, newPlanBalance.toFixed(2));
+        } else if (saldoUsado === 'misto') {
+          const remainingCost = Math.max(0, finalPrice - planBalance);
+          const newWalletBalance = Math.max(0, walletBalance - remainingCost);
+          setPlanBalance(0);
+          setWalletBalance(newWalletBalance);
+          localStorage.setItem(`plan_balance_${user.id}`, '0.00');
+          localStorage.setItem(`wallet_balance_${user.id}`, newWalletBalance.toFixed(2));
+        } else {
+          const newWalletBalance = Math.max(0, walletBalance - finalPrice);
+          setWalletBalance(newWalletBalance);
+          localStorage.setItem(`wallet_balance_${user.id}`, newWalletBalance.toFixed(2));
+        }
+
+        window.dispatchEvent(new CustomEvent('balanceUpdated', {
+          detail: { shouldAnimate: true, immediate: true }
+        }));
+
+        toast.success(`✅ Foto(s) encontrada(s)! Valor cobrado: R$ ${finalPrice.toFixed(2)}`);
+      } finally {
+        setCpfFotoChargePending(null);
+        setCpfFotoCharging(false);
+        loadRecentConsultations();
+        loadStats();
+      }
+    })();
+  }, [
+    isCpfFoto,
+    user,
+    fotosCount,
+    cpfFotoChargePending,
+    cpfFotoCharging,
+    hasActiveSubscription,
+    userPlan,
+    planBalance,
+    walletBalance,
+    moduleId,
+    source,
+    reloadApiBalance,
+  ]);
 
   // Função auxiliar para calcular o status do score (mesmo padrão do CpfView)
   const getScoreStatus = (score: number) => {
@@ -1268,6 +1371,11 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
     console.log('👤 [HANDLE_SEARCH] Usuário:', { id: user.id, email: user.email });
     console.log('🔑 [HANDLE_SEARCH] Token encontrado:', sessionToken.substring(0, 20) + '...');
 
+    if (isCpfFoto) {
+      setFotosCount(-1);
+      setCpfFotoChargePending(null);
+    }
+
     setLoading(true);
 
     try {
@@ -1459,18 +1567,33 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
         userPlan
       });
       
-      const baseCpfResult = await consultarCPFComRegistro(cpf, finalPrice, {
-        discount: discount,
-        original_price: originalPrice,
-        final_price: finalPrice, // valor que será efetivamente cobrado (com desconto)
-        subscription_discount: hasActiveSubscription,
-        plan_type: userPlan,
-        user_id: parseInt(user.id),
-        user_name: user.full_name || user.email || 'Arte Pura', // Nome do usuário para o Telegram
-        session_token: sessionToken,
-        plan_balance: planBalance,
-        wallet_balance: walletBalance
-      }, moduleId, source);
+      const baseCpfResult = isCpfFoto
+        ? await (async () => {
+            const [cpfRes, receitaRes] = await Promise.all([
+              baseCpfService.getByCpf(cpf),
+              baseReceitaService.getByCpf(cpf),
+            ]);
+
+            return {
+              success: cpfRes.success,
+              data: cpfRes.data,
+              error: cpfRes.error,
+              receitaData: receitaRes.success ? receitaRes.data : null,
+              cpfId: cpfRes.data?.id,
+            } as any;
+          })()
+        : await consultarCPFComRegistro(cpf, finalPrice, {
+            discount: discount,
+            original_price: originalPrice,
+            final_price: finalPrice, // valor que será efetivamente cobrado (com desconto)
+            subscription_discount: hasActiveSubscription,
+            plan_type: userPlan,
+            user_id: parseInt(user.id),
+            user_name: user.full_name || user.email || 'Arte Pura', // Nome do usuário para o Telegram
+            session_token: sessionToken,
+            plan_balance: planBalance,
+            wallet_balance: walletBalance
+          }, moduleId, source);
       
       console.log('📊 [HANDLE_SEARCH] Resultado da consulta:', {
         success: baseCpfResult.success,
@@ -1626,22 +1749,39 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
         
         // Exibir notificação de sucesso COM feedback detalhado
         console.log('✅ [HANDLE_SEARCH] Exibindo toast de sucesso');
-        toast.success(`✅ CPF encontrado! Valor cobrado: R$ ${finalPrice.toFixed(2)}`, {
-          description: `Dados de ${cpfData.nome} carregados com sucesso`,
-          duration: 4000
-        });
+        toast.success(
+          isCpfFoto
+            ? '✅ CPF encontrado! Carregando fotos...'
+            : `✅ CPF encontrado! Valor cobrado: R$ ${finalPrice.toFixed(2)}`,
+          {
+            description: `Dados de ${cpfData.nome} carregados com sucesso`,
+            duration: 4000
+          }
+        );
 
         // Auto scroll to result
         setTimeout(() => {
           resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 300);
         
-        console.log('🔄 [HANDLE_SEARCH] Recarregando saldo após consulta...');
-        // Recarregar saldo após cobrança
-        await reloadApiBalance();
-        loadBalances();
+        if (isCpfFoto) {
+          // Deixa a cobrança pendente até confirmar se existe pelo menos 1 foto.
+          setCpfFotoChargePending({
+            cpf,
+            originalPrice,
+            finalPrice,
+            discount,
+            sessionToken,
+          });
+        } else {
+          console.log('🔄 [HANDLE_SEARCH] Recarregando saldo após consulta...');
+          // Recarregar saldo após cobrança
+          await reloadApiBalance();
+          loadBalances();
+        }
         
         // Deduzir saldo localmente para garantir consistência
+        // CPF FOTO: somente após cobrança (feito no useEffect acima).
         const saldoUsado = planBalance >= finalPrice ? 'plano' : 
                           (planBalance > 0 && (planBalance + walletBalance) >= finalPrice) ? 'misto' : 'carteira';
         
@@ -1652,7 +1792,9 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
           saldoUsado
         });
         
-        if (saldoUsado === 'plano') {
+        if (isCpfFoto) {
+          // não deduz aqui
+        } else if (saldoUsado === 'plano') {
           // Usar apenas saldo do plano
           const newPlanBalance = Math.max(0, planBalance - finalPrice);
           setPlanBalance(newPlanBalance);
@@ -1672,12 +1814,14 @@ const ConsultarCpfCompleto: React.FC<ConsultarCpfCompletoProps> = ({ moduleId: m
           localStorage.setItem(`wallet_balance_${user.id}`, newWalletBalance.toFixed(2));
         }
         
-        console.log('✅ [HANDLE_SEARCH] Saldo deduzido localmente');
-        
-        // Emitir evento IMEDIATO para atualização de saldo no menu superior
-        window.dispatchEvent(new CustomEvent('balanceUpdated', {
-          detail: { shouldAnimate: true, immediate: true }
-        }));
+        if (!isCpfFoto) {
+          console.log('✅ [HANDLE_SEARCH] Saldo deduzido localmente');
+          
+          // Emitir evento IMEDIATO para atualização de saldo no menu superior
+          window.dispatchEvent(new CustomEvent('balanceUpdated', {
+            detail: { shouldAnimate: true, immediate: true }
+          }));
+        }
         
         // Atualizar histórico imediatamente após sucesso
         console.log('🔄 [HANDLE_SEARCH] Atualizando histórico após CPF encontrado...');
@@ -2365,6 +2509,9 @@ Todos os direitos reservados.`;
 
                 const badgeClassName =
                   'bg-success text-success-foreground hover:bg-success/80 cursor-pointer transition-colors text-xs';
+
+                // CPF FOTO: não exibir badges/atalhos de navegação.
+                if (isCpfFoto) return null;
 
                 return (
                   <div className="flex flex-wrap gap-2">
