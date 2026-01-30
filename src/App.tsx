@@ -44,6 +44,7 @@ import ConsultarCpfSimples from '@/pages/dashboard/ConsultarCpfSimples';
 import ConsultarCpfBasico from '@/pages/dashboard/ConsultarCpfBasico';
 import ConsultarCpfCompleto from '@/pages/dashboard/ConsultarCpfCompleto';
 import ConsultarCpfFoto from '@/pages/dashboard/ConsultarCpfFoto';
+import ConsultarCpfParentes from '@/pages/dashboard/ConsultarCpfParentes';
 import ConsultarCNPJ from '@/pages/dashboard/ConsultarCNPJ';
 import ConsultarVeiculo from '@/pages/dashboard/ConsultarVeiculo';
 import BuscaNome from '@/pages/dashboard/BuscaNome';
@@ -175,6 +176,7 @@ function App() {
                     <Route path="/dashboard/consultar-cpf-basico" element={<DashboardLayout><ConsultarCpfBasico /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-cpf-completo" element={<DashboardLayout><ConsultarCpfCompleto /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-cpf-foto" element={<DashboardLayout><ConsultarCpfFoto /></DashboardLayout>} />
+                    <Route path="/dashboard/consultar-cpf-parentes" element={<DashboardLayout><ConsultarCpfParentes /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-cnpj" element={<DashboardLayout><ConsultarCNPJ /></DashboardLayout>} />
                     <Route path="/dashboard/consultar-veiculo" element={<DashboardLayout><ConsultarVeiculo /></DashboardLayout>} />
                     <Route path="/dashboard/busca-nome" element={<DashboardLayout><BuscaNome /></DashboardLayout>} />
