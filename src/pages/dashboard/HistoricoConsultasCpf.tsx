@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { RefreshCw, FileText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { consultasCpfHistoryService, type ConsultaCpfHistoryItem } from '@/services/consultasCpfHistoryService';
+import { moduleService, type Module } from '@/utils/apiService';
 import SimpleTitleBar from '@/components/dashboard/SimpleTitleBar';
 import {
   Pagination,
@@ -40,11 +41,27 @@ const formatFullDate = (dateString: string) => {
 const formatCurrency = (value: number) =>
   value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+const normalizeRoute = (raw: unknown): string => {
+  const s = (raw ?? '').toString().trim();
+  if (!s) return '';
+  if (s.startsWith('/')) return s;
+  if (s.startsWith('dashboard/')) return `/${s}`;
+  // se vier só um slug (ex.: consultar-cpf-simples)
+  if (!s.includes('/')) return `/dashboard/${s}`;
+  return `/${s}`;
+};
+
+type ModuleRouteMatcher = {
+  title: string;
+  routes: string[];
+};
+
 const HistoricoConsultasCpf: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ConsultaCpfHistoryItem[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
   const [page, setPage] = useState(1);
 
   const limit = 10;
@@ -52,11 +69,21 @@ const HistoricoConsultasCpf: React.FC = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await consultasCpfHistoryService.getHistory(1, 200);
-      if (res.success && res.data?.data) {
-        setItems(res.data.data);
+      const [historyRes, modulesRes] = await Promise.all([
+        consultasCpfHistoryService.getHistory(1, 200),
+        moduleService.getAll(),
+      ]);
+
+      if (historyRes.success && historyRes.data?.data) {
+        setItems(historyRes.data.data);
       } else {
         setItems([]);
+      }
+
+      if (modulesRes.success && modulesRes.data) {
+        setModules(modulesRes.data);
+      } else {
+        setModules([]);
       }
       setPage(1);
     } finally {
@@ -86,12 +113,40 @@ const HistoricoConsultasCpf: React.FC = () => {
     return `Histórico de Consultas (CPF) • ${total}`;
   }, [total]);
 
+  const moduleMatchers = useMemo<ModuleRouteMatcher[]>(() => {
+    return (modules || [])
+      .map((m) => {
+        const routes = [
+          normalizeRoute(m.api_endpoint),
+          normalizeRoute(m.path),
+          // fallback por slug
+          m.slug ? `/dashboard/${m.slug}` : '',
+        ].filter(Boolean);
+
+        return {
+          title: (m.title || '').toString().trim(),
+          routes,
+        };
+      })
+      .filter((m) => m.title && m.routes.length > 0);
+  }, [modules]);
+
   const getModuloLabel = (item: ConsultaCpfHistoryItem): string => {
     const moduleTitle = (item as any)?.metadata?.module_title;
     if (typeof moduleTitle === 'string' && moduleTitle.trim()) return moduleTitle.trim();
 
     const pageRoute = (item as any)?.metadata?.page_route?.toString?.() || '';
-    const route = pageRoute.toLowerCase();
+    const normalizedPageRoute = normalizeRoute(pageRoute);
+    const route = normalizedPageRoute.toLowerCase();
+
+    // Preferir o título do banco (tabela de módulos) quando bater com a rota
+    if (route) {
+      const match = moduleMatchers.find((m) =>
+        m.routes.some((r) => r.toLowerCase() === route || route.includes(r.toLowerCase()))
+      );
+
+      if (match?.title) return match.title;
+    }
 
     if (route.includes('consultar-cpf-simples')) return 'CPF Simples';
     if (route.includes('consultar-cpf-completo')) return 'CPF Completo';
