@@ -134,7 +134,7 @@ const TelefonesSection: React.FC<TelefonesSectionProps> = ({ cpfId, onCountChang
               <div key={telefone.id}>
                 {index > 0 && <div className="border-t pt-3"></div>}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
+                    <div className={compact ? "max-w-[96px]" : undefined}>
                       <Label htmlFor={`ddd_${telefone.id}`}>DDD</Label>
                       <Input
                         id={`ddd_${telefone.id}`}
