@@ -181,6 +181,8 @@ const consultarCPFComRegistro = async (
             metadata: {
               source,
               page_route: window.location.pathname,
+              // Exibição no histórico (não altera o module_type exigido pelo backend)
+              module_title: (metadata?.module_title ?? metadata?.moduleTypeTitle ?? '').toString().trim() || undefined,
               discount: metadata.discount || 0,
               original_price: metadata.original_price || finalCost, // preço original sem desconto do módulo ID 83
               discounted_price: finalCost, // preço final com desconto aplicado (mesmo que cost)
@@ -1480,6 +1482,7 @@ const ConsultarCpfPuxaTudo: React.FC<ConsultarCpfPuxaTudoProps> = ({
       });
       
       const baseCpfResult = await consultarCPFComRegistro(cpf, finalPrice, {
+        module_title: moduleTitle,
         discount: discount,
         original_price: originalPrice,
         final_price: finalPrice, // valor que será efetivamente cobrado (com desconto)
